@@ -18,7 +18,8 @@ const auth = async (req, res, next) => {
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 		// 從資料庫撈出使用者資料
-		const user = await User.findById(decoded.userId);
+		// const user = await User.findById(decoded.userId);
+		const user = await User.findById(decoded.userId).select("-password");
 
 		if (!user) {
 			return res.status(StatusCodes.UNAUTHORIZED).json({

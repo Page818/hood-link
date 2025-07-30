@@ -6,6 +6,8 @@ import {
 	updateCommunity,
 	getMyCommunities,
 	getCommunityById,
+	getJoinRequests,
+	reviewJoinRequest,
 } from "../controllers/community.js";
 
 import auth from "../middlewares/auth.js";
@@ -26,5 +28,11 @@ router.get("/my", auth, getMyCommunities);
 
 // 取得特定社區詳細資訊
 router.get("/:id", auth, getCommunityById);
+
+// 取得加入申請（僅社區管理員）
+router.get("/:communityId/join-requests", auth, getJoinRequests);
+
+// 審核加入申請
+router.post("/review-join-request", auth, reviewJoinRequest);
 
 export default router;

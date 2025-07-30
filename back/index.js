@@ -9,6 +9,9 @@ import { StatusCodes } from "http-status-codes";
 import userRouter from "./routes/user.js";
 import communityRouter from "./routes/community.js";
 
+// 引入公告路由
+import announcement from "./routes/announcement.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -35,6 +38,8 @@ app.get("/", (req, res) => {
 // 掛上使用者 跟 社區路由
 app.use("/api/users", userRouter);
 app.use("/api/communities", communityRouter);
+// 掛上公告路由
+app.use("/api/announcements", announcement);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {

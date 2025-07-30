@@ -60,9 +60,12 @@ export const joinCommunity = async (req, res) => {
 				message: "請提供要加入的社區 ID",
 			});
 		}
+		// console.log("👉 傳入的社區 ID:", communityId);
+		// console.log("👉 當前登入使用者 ID:", req.user._id);
 
 		const community = await Community.findById(communityId);
-		const user = await User.findById(req.user.userId);
+		// const user = await User.findById(req.user.userId);
+		const user = req.user;
 
 		if (!community || !user) {
 			return res.status(StatusCodes.NOT_FOUND).json({
@@ -226,6 +229,109 @@ export const getCommunityById = async (req, res) => {
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法取得社區資料",
+		});
+	}
+};
+
+// 取得某社區的加入申請清單（僅限管理員）
+export const getJoinRequests = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res.status(StatusCodes.NOT_FOUND).json({
+				success: false,
+				message: "找不到社區",
+			});
+		}
+
+		console.log("目前登入者：", req.user._Id);
+		console.log("社區建立者：", community.creator.toString());
+
+		// 檢查權限
+		if (community.creator.toString() !== req.user._id.toString()) {
+			return res.status(StatusCodes.FORBIDDEN).json({
+				success: false,
+				message: "你不是此社區的管理員，無法檢視申請",
+			});
+		}
+
+		// 撈出待審核申請
+		const requests = await JoinRequest.find({
+			community: communityId,
+			status: "pending",
+		}).populate("user", "name email");
+
+		res.status(StatusCodes.OK).json({
+			success: true,
+			requests,
+		});
+	} catch (err) {
+		console.error("❌ 取得申請失敗", err);
+		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: "無法取得申請清單",
+		});
+	}
+};
+// 審核加入社區的申請（accept/reject）
+export const reviewJoinRequest = async (req, res) => {
+	try {
+		console.log("🎯 進入 reviewJoinRequest");
+
+		const { requestId, decision } = req.body; // decision: "approved" | "rejected"
+
+		const request = await JoinRequest.findById(requestId).populate("community");
+
+		if (!request) {
+			return res.status(StatusCodes.NOT_FOUND).json({
+				success: false,
+				message: "找不到申請資料",
+			});
+		}
+
+		// 僅社區 creator 可審核
+		if (request.community.creator.toString() !== req.user._id.toString()) {
+			return res.status(StatusCodes.FORBIDDEN).json({
+				success: false,
+				message: "你沒有權限審核這項申請",
+			});
+		}
+
+		if (!["approved", "rejected"].includes(decision)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				success: false,
+				message: "請提供有效的決定（approved 或 rejected）",
+			});
+		}
+
+		// 更新申請狀態
+		request.status = decision;
+		await request.save();
+
+		// 若核准，更新社區與使用者資料
+		if (decision === "approved") {
+			const user = await User.findById(request.user);
+			if (!request.community.members.includes(user._id)) {
+				request.community.members.push(user._id);
+				await request.community.save();
+			}
+			if (!user.community.includes(request.community._id)) {
+				user.community.push(request.community._id);
+				await user.save();
+			}
+		}
+
+		res.status(StatusCodes.OK).json({
+			success: true,
+			message: `申請已${decision === "approved" ? "核准" : "拒絕"}`,
+		});
+	} catch (err) {
+		console.error("❌ 審核申請錯誤", err);
+		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: "無法審核申請",
 		});
 	}
 };
