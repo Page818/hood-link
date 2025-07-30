@@ -42,10 +42,39 @@ const userSchema = new mongoose.Schema(
 			enum: ["user", "admin"],
 			default: "user",
 		},
-		community: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: "Community",
+		// 可用於 LINE Bot 綁定
+		lineId: {
+			type: String,
+			trim: true,
+			unique: true,
+			sparse: true,
 		},
+
+		// 判斷是否接收每日問候訊息
+		isElder: {
+			type: Boolean,
+			default: false,
+		},
+		isLivingAlone: {
+			type: Boolean,
+			default: false,
+		},
+		receiveDailyCheck: {
+			type: Boolean,
+			default: false,
+		},
+		// 是否接收災害安否訊息
+		receiveDisasterCheck: {
+			type: Boolean,
+			default: false,
+		},
+
+		community: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Community",
+			},
+		],
 	},
 	{
 		timestamps: true, // 自動加入 createdAt, updatedAt

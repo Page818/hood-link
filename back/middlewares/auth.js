@@ -1,12 +1,10 @@
-// middlewares/auth.js
 import jwt from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
+import User from "../models/user.js";
 
-// 定義一個 Express middleware，命名為 auth
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
 	const authHeader = req.headers.authorization;
 
-	// 檢查是否有 Bearer Token
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
 		return res.status(StatusCodes.UNAUTHORIZED).json({
 			success: false,
@@ -14,22 +12,24 @@ const auth = (req, res, next) => {
 		});
 	}
 
-  // 把 Bearer <token> 拆開，只取 <token> 部分
 	const token = authHeader.split(" ")[1];
 
 	try {
-		// 驗證 token 並解析
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-		// 將解碼資訊掛到 req.user 上
-		req.user = {
-			userId: decoded.userId,
-			role: decoded.role,
-		};
+		// 從資料庫撈出使用者資料
+		const user = await User.findById(decoded.userId);
 
-    //  next() 表示通過驗證，交給下一個 handler 處理請求
-    
-		next();
+		if (!user) {
+			return res.status(StatusCodes.UNAUTHORIZED).json({
+				success: false,
+				message: "使用者不存在",
+			});
+		}
+
+		req.user = user; // ✅ 掛上完整 User 資料（包含 _id、role 等）
+
+		next(); // ✅ 通過驗證，繼續往下走
 	} catch (error) {
 		console.error("JWT 驗證失敗：", error);
 		res.status(StatusCodes.UNAUTHORIZED).json({

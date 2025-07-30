@@ -9,6 +9,18 @@ const communitySchema = new mongoose.Schema(
 			trim: true,
 			unique: true,
 		},
+		// 社區地址
+		address: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		// 是否為公開社區
+		ispublic: {
+			type: Boolean,
+			default: true,
+		},
+
 		// 這是「哪位使用者創建了這個社區」的記錄欄位。
 		creator: {
 			type: mongoose.Schema.Types.ObjectId,
