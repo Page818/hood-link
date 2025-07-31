@@ -12,6 +12,9 @@ import communityRouter from "./routes/community.js";
 // 引入公告路由
 import announcement from "./routes/announcement.js";
 
+// 引入活動路由
+import eventRouter from "./routes/event.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -40,6 +43,8 @@ app.use("/api/users", userRouter);
 app.use("/api/communities", communityRouter);
 // 掛上公告路由
 app.use("/api/announcements", announcement);
+
+app.use("/api/events", eventRouter);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {

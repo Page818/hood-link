@@ -88,8 +88,10 @@ export const getAnnouncementsByCommunity = async (req, res) => {
 		}
 
 		const announcements = await Announcement.find({ community: communityId })
-			.sort({ pinned: -1, updatedAt: -1 }) // 先 pinned，再新到舊
-			.populate("creator", "name email"); // 可選，顯示發布者資訊
+			// 先 pinned，再新到舊
+			.sort({ pinned: -1, updatedAt: -1 });
+		// 可選，顯示發布者資訊
+		// .populate("creator", "name email");
 
 		res.status(StatusCodes.OK).json({
 			success: true,
@@ -118,8 +120,11 @@ export const updateAnnouncement = async (req, res) => {
 			});
 		}
 
-		// 僅建立者可修改
-		if (announcement.creator.toString() !== req.user._id.toString()) {
+		const isCreator =
+			announcement.creator.toString() === req.user._id.toString();
+		const isAdmin = announcement.community.admins.includes(req.user._id);
+
+		if (!isCreator && !isAdmin) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你沒有權限修改這篇公告",
