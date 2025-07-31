@@ -16,7 +16,7 @@ const communitySchema = new mongoose.Schema(
 			trim: true,
 		},
 		// 是否為公開社區
-		ispublic: {
+		isPublic: {
 			type: Boolean,
 			default: true,
 		},
@@ -28,6 +28,13 @@ const communitySchema = new mongoose.Schema(
 			ref: "User",
 			required: true,
 		},
+
+		admins: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "User",
+			},
+		],
 		members: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

@@ -30,6 +30,7 @@ export const createCommunity = async (req, res) => {
 			address,
 			isPublic: !!isPublic,
 			creator: req.user._id,
+			admins: [req.user._id],
 			members: [req.user._id],
 		});
 
@@ -157,7 +158,15 @@ export const updateCommunity = async (req, res) => {
 		}
 
 		// 僅允許創建者編輯
-		if (community.creator?.toString() !== req.user?._id?.toString()) {
+		// if (community.creator?.toString() !== req.user?._id?.toString()) {
+		// 	return res.status(StatusCodes.FORBIDDEN).json({
+		// 		success: false,
+		// 		message: "你沒有權限修改這個社區",
+		// 	});
+		// }
+
+		// 僅允許社區管理員編輯
+		if (!community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你沒有權限修改這個社區",
@@ -246,11 +255,20 @@ export const getJoinRequests = async (req, res) => {
 			});
 		}
 
-		console.log("目前登入者：", req.user._Id);
-		console.log("社區建立者：", community.creator.toString());
+		// console.log("目前登入者：", req.user._Id);
+		// console.log("社區建立者：", community.creator.toString());
 
 		// 檢查權限
-		if (community.creator.toString() !== req.user._id.toString()) {
+
+		// if (community.creator.toString() !== req.user._id.toString()) {
+		// 	return res.status(StatusCodes.FORBIDDEN).json({
+		// 		success: false,
+		// 		message: "你不是此社區的管理員，無法檢視申請",
+		// 	});
+		// }
+
+		// 檢查權限（是否為管理員）
+		if (!community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你不是此社區的管理員，無法檢視申請",
@@ -275,6 +293,7 @@ export const getJoinRequests = async (req, res) => {
 		});
 	}
 };
+
 // 審核加入社區的申請（accept/reject）
 export const reviewJoinRequest = async (req, res) => {
 	try {
@@ -292,7 +311,15 @@ export const reviewJoinRequest = async (req, res) => {
 		}
 
 		// 僅社區 creator 可審核
-		if (request.community.creator.toString() !== req.user._id.toString()) {
+		// if (request.community.creator.toString() !== req.user._id.toString()) {
+		// 	return res.status(StatusCodes.FORBIDDEN).json({
+		// 		success: false,
+		// 		message: "你沒有權限審核這項申請",
+		// 	});
+		// }
+
+		// 僅社區管理員可審核
+		if (!request.community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你沒有權限審核這項申請",
@@ -335,3 +362,4 @@ export const reviewJoinRequest = async (req, res) => {
 		});
 	}
 };
+
