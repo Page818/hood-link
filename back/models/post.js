@@ -1,7 +1,6 @@
 // models/post.js
 
 import mongoose from "mongoose";
-import { trim } from "validator";
 
 const postSchema = new mongoose.Schema(
 	{
