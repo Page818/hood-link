@@ -18,6 +18,9 @@ import eventRouter from "./routes/event.js";
 // 引入貼文路由
 import postRoutes from "./routes/post.js";
 
+// 引入留言路由
+import commentRouter from "./routes/comment.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -52,6 +55,9 @@ app.use("/api/events", eventRouter);
 
 // 掛上貼文路由
 app.use("/api/posts", postRoutes);
+
+// 掛上留言路由
+app.use("/api/comments", commentRouter);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {

@@ -21,13 +21,20 @@ const postSchema = new mongoose.Schema(
 
 		category: {
 			type: String,
-			enum: ["鄰里閒聊", "推薦分享", "二手交換", "失物招領", "求助協尋"],
+			enum: [
+				"鄰里閒聊",
+				"推薦分享",
+				"二手交換",
+				"失物招領",
+				"求助協尋",
+				"其他",
+			],
 			default: "其他",
 		},
 
 		community: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: "community",
+			ref: "Community",
 			required: true,
 		},
 
