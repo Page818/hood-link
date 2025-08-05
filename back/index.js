@@ -24,6 +24,12 @@ import commentRouter from "./routes/comment.js";
 // 引入回報路由
 import reportRouter from "./routes/report.js";
 
+// 災害回報
+import disasterCheckRoutes from "./routes/disasterCheck.js";
+
+// 每日問候
+import dailyGreetingRoutes from "./routes/dailyGreeting.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -64,6 +70,12 @@ app.use("/api/comments", commentRouter);
 
 // 掛上回報路由
 app.use("/api/reports", reportRouter);
+
+// 災害回報
+app.use("/api/disaster", disasterCheckRoutes);
+
+// 每日問候
+app.use("/api/dailygreeting", dailyGreetingRoutes);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {
