@@ -1,6 +1,5 @@
 // models/comment.js
 import mongoose from "mongoose";
-import { trim } from "validator";
 
 const commentSchema = new mongoose.Schema(
 	{
