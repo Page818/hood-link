@@ -21,6 +21,9 @@ import postRoutes from "./routes/post.js";
 // 引入留言路由
 import commentRouter from "./routes/comment.js";
 
+// 引入回報路由
+import reportRouter from "./routes/report.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -58,6 +61,9 @@ app.use("/api/posts", postRoutes);
 
 // 掛上留言路由
 app.use("/api/comments", commentRouter);
+
+// 掛上回報路由
+app.use("/api/reports", reportRouter);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {
