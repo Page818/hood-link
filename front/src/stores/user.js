@@ -1,20 +1,19 @@
-// src/stores/user.js
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
+// store/user.js
+import { defineStore } from 'pinia'
 
-export const useUserStore = defineStore('user', () => {
-  const user = ref(null);
-  const isAuthenticated = ref(false);
-
-  function login(userData) {
-    user.value = userData;
-    isAuthenticated.value = true;
-  }
-
-  function logout() {
-    user.value = null;
-    isAuthenticated.value = false;
-  }
-
-  return { user, isAuthenticated, login, logout };
-});
+export const useUserStore = defineStore('user', {
+  state: () => ({
+    user: null,
+    token: localStorage.getItem('token') || null,
+  }),
+  actions: {
+    setUser(data) {
+      this.user = data
+    },
+    logout() {
+      this.user = null
+      this.token = null
+      localStorage.removeItem('token')
+    },
+  },
+})
