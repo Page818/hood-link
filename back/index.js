@@ -48,6 +48,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 紀錄每個進來的請求路徑
+app.use((req, res, next) => {
+	console.log("📥 收到請求:", req.method, req.url);
+	next();
+});
+
 // 測試首頁
 app.get("/", (req, res) => {
 	res.send("好鄰聚後端 API");

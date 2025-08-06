@@ -27,14 +27,23 @@ export const register = async (req, res) => {
 			});
 		}
 
-		const existingUser = await User.findOne({
-			$or: [{ email }, { phone }],
-		});
+		// 動態建立查詢條件，只加有傳的欄位
+		const query = [];
+		if (email) query.push({ email });
+		if (phone) query.push({ phone });
 
-		if (existingUser) {
-			return res.status(StatusCodes.CONFLICT).json({
+		if (query.length > 0) {
+			const existingUser = await User.findOne({ $or: query });
+			if (existingUser) {
+				return res.status(StatusCodes.CONFLICT).json({
+					success: false,
+					message: "該 Email 或手機已被註冊",
+				});
+			}
+		} else {
+			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
-				message: "該 Email 或手機已被註冊",
+				message: "請提供 Email 或手機號碼",
 			});
 		}
 
@@ -51,6 +60,7 @@ export const register = async (req, res) => {
 		});
 
 		await newUser.save();
+		console.log(newUser.password);
 
 		res.status(StatusCodes.CREATED).json({
 			success: true,
@@ -77,9 +87,25 @@ export const login = async (req, res) => {
 	try {
 		const { email, phone, password } = req.body;
 
-		const user = await User.findOne(email ? { email } : { phone }).select(
-			"+password"
-		);
+		// 至少要有 email 或 phone
+		if (!email && !phone) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				success: false,
+				message: "請提供 Email 或手機號碼",
+			});
+		}
+
+		// 動態建立查詢條件
+		const query = [];
+		if (email) query.push({ email });
+		if (phone) query.push({ phone });
+
+		// 查詢使用者
+		const user = await User.findOne({ $or: query }).select("+password");
+
+		// Debug log（測試時可用，之後可刪）
+		console.log("前端送來的帳號資料:", { email, phone });
+		console.log("資料庫找到的使用者:", user ? user._id : null);
 
 		if (!user) {
 			return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -88,6 +114,7 @@ export const login = async (req, res) => {
 			});
 		}
 
+		// 比對密碼
 		const isMatch = await bcrypt.compare(password, user.password);
 		if (!isMatch) {
 			return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -96,6 +123,7 @@ export const login = async (req, res) => {
 			});
 		}
 
+		// 產生 JWT
 		const token = jwt.sign(
 			{ userId: user._id, role: user.role },
 			process.env.JWT_SECRET,
