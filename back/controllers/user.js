@@ -85,52 +85,42 @@ export const register = async (req, res) => {
 // POST /api/users/login
 export const login = async (req, res) => {
 	try {
-		const { email, phone, password } = req.body;
+		const { account, password } = req.body;
 
-		// 至少要有 email 或 phone
-		if (!email && !phone) {
-			return res.status(StatusCodes.BAD_REQUEST).json({
-				success: false,
-				message: "請提供 Email 或手機號碼",
-			});
+		// 格式已經在中介層驗證過了，這裡可以放心用
+		let query = {};
+		if (/^\d{10}$/.test(account)) {
+			query.phone = account;
+		} else {
+			query.email = account;
 		}
+		console.log("⚠️ 登入接收帳號密碼：", account, password);
 
-		// 動態建立查詢條件
-		const query = [];
-		if (email) query.push({ email });
-		if (phone) query.push({ phone });
-
-		// 查詢使用者
-		const user = await User.findOne({ $or: query }).select("+password");
-
-		// Debug log（測試時可用，之後可刪）
-		console.log("前端送來的帳號資料:", { email, phone });
-		console.log("資料庫找到的使用者:", user ? user._id : null);
+		const user = await User.findOne(query).select("+password");
+		console.log("🔍 查到的使用者：", user);
 
 		if (!user) {
-			return res.status(StatusCodes.UNAUTHORIZED).json({
+			return res.status(401).json({
 				success: false,
 				message: "找不到帳號",
 			});
 		}
 
-		// 比對密碼
 		const isMatch = await bcrypt.compare(password, user.password);
 		if (!isMatch) {
-			return res.status(StatusCodes.UNAUTHORIZED).json({
+			return res.status(401).json({
 				success: false,
 				message: "密碼錯誤",
 			});
 		}
 
-		// 產生 JWT
 		const token = jwt.sign(
 			{ userId: user._id, role: user.role },
 			process.env.JWT_SECRET,
 			{ expiresIn: "3d" }
 		);
 
-		res.status(StatusCodes.OK).json({
+		res.status(200).json({
 			success: true,
 			message: "登入成功",
 			token,
@@ -144,7 +134,7 @@ export const login = async (req, res) => {
 		});
 	} catch (err) {
 		console.error("❌ 登入錯誤：", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+		res.status(500).json({
 			success: false,
 			message: "登入失敗",
 		});
@@ -154,16 +144,17 @@ export const login = async (req, res) => {
 // GET /api/users/me
 export const getCurrentUser = async (req, res) => {
 	try {
-		const user = await User.findById(req.user.userId)
-			.populate("community", "name")
-			.select("-password");
+		const user = await User.findById(req.user._id)
+			.select("-password")
+			.populate("community", "name admins");
 		if (!user) {
 			return res.status(StatusCodes.NOT_FOUND).json({
 				success: false,
 				message: "找不到使用者",
 			});
 		}
-
+		console.log("✅ /me 成功，req.user =", req.user);
+		console.log("✅ decoded 使用者：", req.user);
 		res.json({
 			success: true,
 			user: {

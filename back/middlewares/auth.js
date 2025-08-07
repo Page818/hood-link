@@ -1,3 +1,4 @@
+// middlewares/auth.js
 import jwt from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
 import User from "../models/user.js";
@@ -16,10 +17,12 @@ const auth = async (req, res, next) => {
 
 	try {
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
+		console.log("✅ decoded：", decoded);
 
 		// 從資料庫撈出使用者資料
 		// const user = await User.findById(decoded.userId);
 		const user = await User.findById(decoded.userId).select("-password");
+		req.user = user;
 
 		if (!user) {
 			return res.status(StatusCodes.UNAUTHORIZED).json({

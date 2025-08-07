@@ -15,8 +15,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:4000', // 你的後端 API 伺服器
         changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ''),
+        // 例如 /api/users/login -> /users/login
       },
     },
   },
