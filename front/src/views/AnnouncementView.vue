@@ -35,18 +35,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
+
+// 共用：取得社區 ID（URL 優先，其次使用者/備援）
+import { useCommunityId } from '@/composables/useCommunityId'
 
 // 子元件
 import AnnouncementList from '@/components/AnnouncementList.vue'
 import AnnouncementDetail from '@/components/AnnouncementDetail.vue'
 import BackToDashboard from '@/components/BackToDashboard.vue'
 
-// 路由參數
-const route = useRoute()
-const communityId = route.params.id
+const router = useRouter()
+const { communityId } = useCommunityId()
 
 // 狀態
 const announcements = ref([])
@@ -54,29 +56,53 @@ const selectedId = ref(null)
 const loading = ref(true)
 const error = ref('')
 
-const selectedAnnouncement = computed(() =>
-  announcements.value.find((a) => a._id === selectedId.value),
+// 目前選中的公告
+const selectedAnnouncement = computed(
+  () => announcements.value.find((a) => a._id === selectedId.value) || null,
 )
 
-// 一開始載入資料
-onMounted(async () => {
-  try {
-    const res = await api.get(`/announcements/community/${communityId}`)
-    announcements.value = res.data.announcements
+// 取公告清單
+async function fetchAnnouncements() {
+  if (!communityId.value) return // 沒有 ID 就不要打 /undefined
+  loading.value = true
+  error.value = ''
 
-    // 選擇顯示：置頂公告 → 最新公告
+  try {
+    // 你的 axios 已有 baseURL '/api'，這裡不用再加 '/api'
+    const { data } = await api.get(`/announcements/community/${communityId.value}`)
+    announcements.value = data.announcements || []
+
+    // 預設顯示：置頂優先，否則最新一筆
     const pinned = announcements.value.find((a) => a.pinned)
-    selectedId.value = pinned ? pinned._id : announcements.value[0]?._id
+    selectedId.value = pinned ? pinned._id : announcements.value[0]?._id || null
   } catch (err) {
     console.error('❌ 載入公告失敗', err)
     error.value = '無法載入公告列表，請稍後再試'
   } finally {
     loading.value = false
   }
+}
+
+// 初次進入
+onMounted(async () => {
+  if (!communityId.value) {
+    // 沒有社區情境 → 導去加入社區
+    router.push({ name: 'community.join' })
+    return
+  }
+  await fetchAnnouncements()
 })
 
-// 使用者選擇某一則公告
-const handleSelect = (id) => {
+// 若同頁切換了社區（URL 變了），自動重抓
+watch(
+  () => communityId.value,
+  async () => {
+    if (!communityId.value) return
+    await fetchAnnouncements()
+  },
+)
+
+function handleSelect(id) {
   selectedId.value = id
 }
 </script>

@@ -9,11 +9,9 @@
     <!-- 功能卡片區塊 -->
     <v-row>
       <v-col v-for="(item, index) in features" :key="index" cols="12" sm="6" class="mb-6">
-        <v-card class="text-center py-6" elevation="4" @click="navigateTo(item.route)" hover>
+        <v-card class="text-center py-6" elevation="4" @click="navigateTo(item.name)" hover>
           <v-icon size="48" class="mb-2">{{ item.icon }}</v-icon>
-          <div class="text-subtitle-1 font-weight-medium">
-            {{ item.title }}
-          </div>
+          <div class="text-subtitle-1 font-weight-medium">{{ item.title }}</div>
         </v-card>
       </v-col>
     </v-row>
@@ -22,28 +20,26 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
-const communityId = ref(route.params.id)
+
+// ✅ 統一使用 communityId（URL 優先）
+const communityId = computed(() => route.params.communityId)
 
 const communityName = ref('')
 const loading = ref(true)
 
-const fetchCommunityName = async () => {
+async function fetchCommunityName() {
+  if (!communityId.value) return
+  loading.value = true
   try {
-    loading.value = true
-    const res = await api.get('/users/me')
-    const user = res.data.user
-
-    const matchedCommunity = user.community.find((c) => c._id === communityId.value)
-
-    communityName.value = matchedCommunity ? matchedCommunity.name : '未知社區'
-  } catch (err) {
-    console.error('❌ 載入使用者資料失敗', err)
-    communityName.value = '載入失敗'
+    const { data } = await api.get('/users/me')
+    const user = data.user
+    const matched = user?.community?.find((c) => (c._id || c) === communityId.value)
+    communityName.value = matched ? matched.name : '未知社區'
   } finally {
     loading.value = false
   }
@@ -51,23 +47,25 @@ const fetchCommunityName = async () => {
 
 onMounted(fetchCommunityName)
 
-// ✅ 關鍵：監聽網址中的 id 有變化時重新取得資料
+// ✅ 監聽網址中的 communityId 變化
 watch(
-  () => route.params.id,
-  (newId) => {
-    communityId.value = newId
-    fetchCommunityName()
+  () => communityId.value,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) fetchCommunityName()
   },
 )
 
+// ✅ 功能清單：改用「路由名稱」
 const features = [
-  { title: '最新公告', icon: 'mdi-bullhorn-outline', route: 'announcement' },
-  { title: '好鄰交流', icon: 'mdi-message-text-outline', route: 'posts' },
-  { title: '異常回報', icon: 'mdi-map-marker-alert-outline', route: 'reports' },
-  { title: '活動列表', icon: 'mdi-calendar-heart', route: 'events' },
+  { title: '最新公告', icon: 'mdi-bullhorn-outline', name: 'community.announcements' },
+  { title: '好鄰交流', icon: 'mdi-message-text-outline', name: 'posts' }, // 若之後有命名可替換
+  { title: '異常回報', icon: 'mdi-map-marker-alert-outline', name: 'reports' }, // 同上
+  { title: '活動列表', icon: 'mdi-calendar-heart', name: 'community.events' },
 ]
 
-const navigateTo = (target) => {
-  router.push(`/community/${communityId.value}/${target}`)
+// ✅ 導頁一律用 name + params，避免漏參數
+function navigateTo(routeName) {
+  if (!communityId.value) return
+  router.push({ name: routeName, params: { communityId: communityId.value } })
 }
 </script>

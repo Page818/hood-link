@@ -87,7 +87,7 @@ app.use("/api/dailygreeting", dailyGreetingRoutes);
 app.all(/.*/, (req, res) => {
 	res.status(StatusCodes.NOT_FOUND).json({
 		success: false,
-		message: "找不到該路由",
+		message: `找不到該路由 ${req.method} ${req.originalUrl}`,
 	});
 });
 

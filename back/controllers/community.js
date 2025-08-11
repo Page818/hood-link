@@ -4,6 +4,8 @@ import { StatusCodes } from "http-status-codes";
 import User from "../models/user.js";
 import JoinRequest from "../models/joinRequest.js";
 
+import mongoose from "mongoose";
+
 // ✅ 建立新社區
 export const createCommunity = async (req, res) => {
 	try {
@@ -35,6 +37,10 @@ export const createCommunity = async (req, res) => {
 		});
 
 		await newCommunity.save();
+		// 建立成功後
+		await User.findByIdAndUpdate(req.user._id, {
+			$addToSet: { community: newCommunity._id },
+		});
 
 		res.status(StatusCodes.CREATED).json({
 			success: true,
@@ -217,22 +223,24 @@ export const getMyCommunities = async (req, res) => {
 // ✅ 取得單一社區詳細資料
 export const getCommunityById = async (req, res) => {
 	try {
-		const community = await Community.findById(req.params.id).populate(
+		const { id } = req.params;
+		if (!mongoose.isValidObjectId(id)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				success: false,
+				message: "無效的社區 ID",
+			});
+		}
+		const community = await Community.findById(id).populate(
 			"creator",
 			"name email"
 		);
-
 		if (!community) {
 			return res.status(StatusCodes.NOT_FOUND).json({
 				success: false,
 				message: "找不到該社區",
 			});
 		}
-
-		res.status(StatusCodes.OK).json({
-			success: true,
-			community,
-		});
+		res.status(StatusCodes.OK).json({ success: true, community });
 	} catch (err) {
 		console.error("❌ 取得社區失敗", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -362,4 +370,3 @@ export const reviewJoinRequest = async (req, res) => {
 		});
 	}
 };
-

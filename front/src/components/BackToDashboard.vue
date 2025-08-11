@@ -12,14 +12,18 @@
 </template>
 
 <script setup>
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { useCommunityId } from '@/composables/useCommunityId'
 
 const router = useRouter()
-const route = useRoute()
+const { communityId } = useCommunityId()
 
-const communityId = route.params.id
-
-const goBack = () => {
-  router.push(`/community/${communityId}`)
+function goBack() {
+  // URL 有帶就回 /community/:communityId；否則導到加入社區
+  if (communityId.value) {
+    router.push({ name: 'community.dashboard', params: { communityId: communityId.value } })
+  } else {
+    router.push({ name: 'community.join' })
+  }
 }
 </script>
