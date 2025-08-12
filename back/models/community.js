@@ -1,5 +1,6 @@
 // models/community.js
 import mongoose from "mongoose";
+import { mongooseIdPlugin } from '../utils/mongooseIdPlugin.js'
 
 const communitySchema = new mongoose.Schema(
 	{
@@ -55,5 +56,6 @@ const communitySchema = new mongoose.Schema(
 	}
 );
 
+communitySchema.plugin(mongooseIdPlugin) 
 const Community = mongoose.model("Community", communitySchema);
 export default Community;

@@ -3,6 +3,8 @@
 import Event from "../models/event.js";
 import Community from "../models/community.js";
 import { StatusCodes } from "http-status-codes";
+import mongoose from "mongoose"; // ← 新增
+const sameId = (a, b) => String(a) === String(b);
 
 // 建立活動
 export const createEvent = async (req, res) => {
@@ -17,20 +19,36 @@ export const createEvent = async (req, res) => {
 			});
 		}
 
-		const community = await Community.findById(communityId);
-		if (!community) {
-			return res.status(StatusCodes.NOT_FOUND).json({
+		if (!mongoose.isValidObjectId(communityId)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
-				message: "找不到對應社區",
+				message: "無效的社區 ID",
 			});
 		}
 
-		// 僅限社區管理員可建立活動
-		if (!community.admins.includes(req.user._id)) {
-			return res.status(StatusCodes.FORBIDDEN).json({
-				success: false,
-				message: "你沒有權限建立活動",
-			});
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到對應社區" });
+		}
+
+		// 只有管理員可建立（比對 ObjectId 要用字串）
+		const isAdmin = community.admins.some((a) => sameId(a, req.user._id));
+		if (!isAdmin) {
+			return res
+				.status(StatusCodes.FORBIDDEN)
+				.json({ success: false, message: "你沒有權限建立活動" });
+		}
+
+		// 可選：截止時間需 <= 活動開始時間
+		if (
+			registrationDeadline &&
+			new Date(registrationDeadline) > new Date(date)
+		) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "報名截止時間不得晚於活動開始時間" });
 		}
 
 		const newEvent = new Event({
@@ -53,10 +71,9 @@ export const createEvent = async (req, res) => {
 		});
 	} catch (err) {
 		console.error("❌ 建立活動失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: "建立活動失敗",
-		});
+		res
+			.status(StatusCodes.INTERNAL_SERVER_ERROR)
+			.json({ success: false, message: "建立活動失敗" });
 	}
 };
 
@@ -64,28 +81,24 @@ export const createEvent = async (req, res) => {
 export const getEventsByCommunity = async (req, res) => {
 	try {
 		const { communityId } = req.params;
-
-		if (!communityId) {
-			return res.status(StatusCodes.BAD_REQUEST).json({
-				success: false,
-				message: "請提供社區 ID",
-			});
+		if (!mongoose.isValidObjectId(communityId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的社區 ID" });
 		}
+
+		// 你原本是 registrationDeadline: -1, date: -1；前端會挑最近未來的當預設
+		// 若列表想看「最近到最遠」可改成 date: 1（看你的 UX 偏好）
 		const events = await Event.find({ community: communityId }).sort({
-			registrationDeadline: -1,
-			date: -1,
+			date: 1,
 		});
 
-		res.status(StatusCodes.OK).json({
-			success: true,
-			events,
-		});
+		res.status(StatusCodes.OK).json({ success: true, events });
 	} catch (err) {
 		console.error("❌ 取得社區活動清單失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: "取得社區活動清單失敗",
-		});
+		res
+			.status(StatusCodes.INTERNAL_SERVER_ERROR)
+			.json({ success: false, message: "取得社區活動清單失敗" });
 	}
 };
 
@@ -131,8 +144,10 @@ export const updateEvent = async (req, res) => {
 			});
 		}
 
-		const isCreator = event.creator.toString() === req.user._id.toString();
-		const isAdmin = event.community.admins.includes(req.user._id);
+		// const isCreator = event.creator.toString() === req.user._id.toString();
+		// const isAdmin = event.community.admins.includes(req.user._id);
+		const isCreator = sameId(event.creator, req.user._id);
+		const isAdmin = event.community.admins.some((a) => sameId(a, req.user._id));
 
 		if (!isCreator && !isAdmin) {
 			return res.status(StatusCodes.FORBIDDEN).json({
@@ -175,8 +190,10 @@ export const deleteEvent = async (req, res) => {
 				message: "找不到活動",
 			});
 		}
-		const isCreator = event.creator.toString() === req.user._id.toString();
-		const isAdmin = event.community.admins.includes(req.user._id);
+		// const isCreator = event.creator.toString() === req.user._id.toString();
+		// const isAdmin = event.community.admins.includes(req.user._id);
+		const isCreator = sameId(event.creator, req.user._id);
+		const isAdmin = event.community.admins.some((a) => sameId(a, req.user._id));
 
 		if (!isCreator && !isAdmin) {
 			return res.status(StatusCodes.FORBIDDEN).json({
@@ -251,48 +268,60 @@ export const getEventParticipants = async (req, res) => {
 // 使用者活動報名
 export const registerEvent = async (req, res) => {
 	try {
+		// ⚠️ 確認路由參數名稱與此一致：router.post('/register/:eventId', registerEvent)
 		const { eventId } = req.params;
 		const userId = req.user._id;
 
+		if (!mongoose.isValidObjectId(eventId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的活動 ID" });
+		}
+
 		const event = await Event.findById(eventId);
-
 		if (!event) {
-			return res.status(StatusCodes.NOT_FOUND).json({
-				success: false,
-				message: "找不到該活動",
-			});
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到該活動" });
 		}
 
-		// 若有報名截止時間，檢查是否已超過
-		if (event.registrationDeadline && new Date() > event.registrationDeadline) {
-			return res.status(StatusCodes.FORBIDDEN).json({
-				success: false,
-				message: "報名已截止",
-			});
+		const now = new Date();
+		if (event.date && new Date(event.date) < now) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "活動已開始或結束" });
+		}
+		if (
+			event.registrationDeadline &&
+			now > new Date(event.registrationDeadline)
+		) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "報名已截止" });
 		}
 
-		// 避免重複報名
-		if (event.participants.includes(userId)) {
-			return res.status(StatusCodes.BAD_REQUEST).json({
-				success: false,
-				message: "你已經報名過此活動",
-			});
+		// 避免重複報名（ObjectId 需字串比）
+		if (event.participants.some((p) => sameId(p, userId))) {
+			return res
+				.status(StatusCodes.CONFLICT)
+				.json({ success: false, message: "你已經報名過此活動" });
 		}
 
 		event.participants.push(userId);
 		await event.save();
 
-		res.status(StatusCodes.OK).json({
-			success: true,
-			message: "報名成功",
-		});
+		// 直接回傳最新活動（前端可直接套用 detail）
+		const fresh = await Event.findById(eventId)
+			.populate("participants", "name")
+			.populate("community", "name");
+		res
+			.status(StatusCodes.OK)
+			.json({ success: true, message: "報名成功", event: fresh });
 	} catch (err) {
 		console.error("❌ 報名活動失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: "無法報名活動",
-			error: err.message,
-		});
+		res
+			.status(StatusCodes.INTERNAL_SERVER_ERROR)
+			.json({ success: false, message: "無法報名活動", error: err.message });
 	}
 };
 
@@ -302,39 +331,41 @@ export const cancelRegistration = async (req, res) => {
 		const { eventId } = req.params;
 		const userId = req.user._id;
 
+		if (!mongoose.isValidObjectId(eventId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的活動 ID" });
+		}
+
 		const event = await Event.findById(eventId);
-
 		if (!event) {
-			return res.status(StatusCodes.NOT_FOUND).json({
-				success: false,
-				message: "找不到該活動",
-			});
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到該活動" });
 		}
 
-		// 檢查是否已報名
-		if (!event.participants.includes(userId)) {
-			return res.status(StatusCodes.BAD_REQUEST).json({
-				success: false,
-				message: "你尚未報名此活動",
-			});
-		}
-
-		// 從陣列中移除該使用者
+		const existed = event.participants.length;
 		event.participants = event.participants.filter(
-			(participant) => participant.toString() !== userId.toString()
+			(p) => String(p) !== String(userId)
 		);
+		if (event.participants.length === existed) {
+			return res
+				.status(StatusCodes.CONFLICT)
+				.json({ success: false, message: "你尚未報名此活動" });
+		}
+
 		await event.save();
 
-		res.status(StatusCodes.OK).json({
-			success: true,
-			message: "已取消報名",
-		});
+		const fresh = await Event.findById(eventId)
+			.populate("participants", "name")
+			.populate("community", "name");
+		res
+			.status(StatusCodes.OK)
+			.json({ success: true, message: "已取消報名", event: fresh });
 	} catch (err) {
 		console.error("❌ 取消報名失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: "無法取消報名",
-			error: err.message,
-		});
+		res
+			.status(StatusCodes.INTERNAL_SERVER_ERROR)
+			.json({ success: false, message: "無法取消報名", error: err.message });
 	}
 };

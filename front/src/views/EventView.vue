@@ -1,3 +1,4 @@
+<!-- views/EventView.vue -->
 <template>
   <v-container class="py-8">
     <BackToDashboard />
@@ -28,6 +29,11 @@
         />
       </v-col>
     </v-row>
+
+    <!-- 通知 -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" rounded="pill">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -39,6 +45,7 @@ import { useCommunityId } from '@/composables/useCommunityId'
 import EventList from '@/components/EventList.vue'
 import EventDetail from '@/components/EventDetail.vue'
 import BackToDashboard from '@/components/BackToDashboard.vue'
+import { toId } from '@/utils/id.js'
 
 const router = useRouter()
 const { communityId } = useCommunityId()
@@ -48,14 +55,36 @@ const selectedId = ref(null)
 const detail = ref(null)
 const loading = ref({ list: false, detail: false, register: false, cancel: false })
 
-const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-const myId = currentUser?._id
-const isSelfRegistered = computed(() => {
-  if (!detail.value || !Array.isArray(detail.value.participants)) return false
-  return detail.value.participants.some((p) => (p?._id || p) === myId)
+const snackbar = ref({
+  show: false,
+  message: '',
+  color: 'success',
 })
+function showToast(message, color = 'success') {
+  snackbar.value.message = message
+  snackbar.value.color = color
+  snackbar.value.show = true
+}
 
-// 進頁
+const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+const myId = toId(currentUser)
+
+const isSelfRegistered = computed(() => {
+ return (detail.value?.participants ?? []).includes(myId)})
+let lastFetchedDetailId = null
+
+async function safeApiCall(promise) {
+  try {
+    return await promise
+  } catch (err) {
+    if ([400, 409].includes(err?.response?.status)) {
+      await fetchDetail(true)
+    }
+    throw err
+  }
+}
+
+// 初始化進頁
 onMounted(async () => {
   if (!communityId.value) {
     router.push({ name: 'community.join' })
@@ -64,20 +93,14 @@ onMounted(async () => {
   await fetchList()
 })
 
-// 切換社區時刷新（交給 fetchList 處理重入）
+// 切換社區時刷新
 watch(() => communityId.value, fetchList)
 
-// ---- 防重入快取 ----
-let lastFetchedCommunityId = null
-let lastFetchedDetailId = null
-
-// 取得清單
+// 取得活動清單
 async function fetchList() {
   const id = communityId.value
-  if (!id || id === lastFetchedCommunityId) return
-  lastFetchedCommunityId = id
+  if (!id) return
 
-  // 切社區時先清空右側
   selectedId.value = null
   detail.value = null
 
@@ -86,14 +109,16 @@ async function fetchList() {
     const { data } = await api.get(`/events/community/${id}`)
     events.value = data.events || []
 
-    // 只在尚未選擇時設定預設值，避免和子元件互相觸發
     if (!selectedId.value && events.value.length) {
       const now = new Date()
       const upcoming = events.value
         .filter((e) => new Date(e.date) >= now)
         .sort((a, b) => new Date(a.date) - new Date(b.date))
-      const defaultId = (upcoming[0] || events.value[0])._id
-      if (selectedId.value !== defaultId) selectedId.value = defaultId
+      selectedId.value = toId(upcoming[0] || events.value[0])
+    }
+
+    if (selectedId.value) {
+      await fetchDetail(true)
     }
   } catch (err) {
     console.error('❌ 取得活動清單失敗', err)
@@ -102,55 +127,80 @@ async function fetchList() {
   }
 }
 
-// 取得詳情（同一 id 不重抓）
-async function fetchDetail() {
+// 取得活動詳情（可強制重抓）
+async function fetchDetail(force = false) {
   const id = selectedId.value
-  if (!id || id === lastFetchedDetailId) return
+  if (!id) return
+  if (!force && id === lastFetchedDetailId) return
   lastFetchedDetailId = id
 
   loading.value.detail = true
   try {
     const { data } = await api.get(`/events/id/${id}`)
+    if (data?.event) {
+      data.event.participants = (data.event.participants ?? []).map(toId)
+    }
     detail.value = data.event
   } catch (err) {
     console.error('❌ 取得活動詳情失敗', err)
+    showToast(err?.response?.data?.message || '取得活動詳情失敗', 'error')
   } finally {
     loading.value.detail = false
   }
 }
 
-// 只有 id 變化才更新，避免回圈
+// 切換選單時載入詳情
 function handleSelect(id) {
   if (!id || id === selectedId.value) return
   selectedId.value = id
 }
+watch(selectedId, () => fetchDetail(true))
 
-watch(selectedId, fetchDetail)
-
-// 報名/取消
+// 報名
 async function registerEvent() {
   if (!detail.value) return
   loading.value.register = true
   try {
-    await api.post(`/events/register/${detail.value._id}`)
-    await fetchDetail()
+    const eventId = toId(detail.value)
+    const { data } = await safeApiCall(api.post(`/events/register/${eventId}`))
+
+    if (data?.event) {
+      data.event.participants = (data.event.participants ?? []).map(toId)
+      detail.value = data.event
+      const idx = events.value.findIndex((e) => toId(e) === toId(data.event))
+      if (idx > -1) events.value[idx] = { ...events.value[idx], ...data.event }
+    } else {
+      await fetchDetail(true)
+    }
+    showToast(data?.message || '報名成功！', 'success')
   } catch (err) {
     console.error('❌ 報名失敗', err)
-    alert(err?.response?.data?.message || '報名失敗')
+    showToast(err?.response?.data?.message || '報名失敗', 'error')
   } finally {
     loading.value.register = false
   }
 }
 
+// 取消報名
 async function cancelRegistration() {
   if (!detail.value) return
   loading.value.cancel = true
   try {
-    await api.delete(`/events/register/${detail.value._id}`)
-    await fetchDetail()
+    const eventId = toId(detail.value)
+    const { data } = await safeApiCall(api.delete(`/events/register/${eventId}`))
+
+    if (data?.event) {
+      data.event.participants = (data.event.participants ?? []).map(toId)
+      detail.value = data.event
+      const idx = events.value.findIndex((e) => toId(e) === toId(data.event))
+      if (idx > -1) events.value[idx] = { ...events.value[idx], ...data.event }
+    } else {
+      await fetchDetail(true)
+    }
+    showToast(data?.message || '已取消報名', 'success')
   } catch (err) {
     console.error('❌ 取消報名失敗', err)
-    alert(err?.response?.data?.message || '取消報名失敗')
+    showToast(err?.response?.data?.message || '取消報名失敗', 'error')
   } finally {
     loading.value.cancel = false
   }

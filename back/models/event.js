@@ -1,6 +1,7 @@
 // models/event.js
 
 import mongoose from "mongoose";
+// import { mongooseIdPlugin } from "../utils/mongooseIdPlugin.js";
 
 const eventSchema = new mongoose.Schema(
 	{
@@ -48,6 +49,6 @@ const eventSchema = new mongoose.Schema(
 		timestamps: true, // createdAt / updatedAt
 	}
 );
-
+// eventSchema.plugin(mongooseIdPlugin);
 const Event = mongoose.model("Event", eventSchema);
 export default Event;

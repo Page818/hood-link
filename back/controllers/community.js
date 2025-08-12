@@ -38,9 +38,26 @@ export const createCommunity = async (req, res) => {
 
 		await newCommunity.save();
 		// 建立成功後
-		await User.findByIdAndUpdate(req.user._id, {
-			$addToSet: { community: newCommunity._id },
-		});
+		const user = await User.findById(req.user._id);
+
+		if (!user) {
+			return res.status(StatusCodes.NOT_FOUND).json({
+				success: false,
+				message: "找不到使用者",
+			});
+		}
+
+		// ✅ 確保欄位為陣列
+		if (!Array.isArray(user.community)) {
+			user.community = [];
+		}
+
+		// ✅ 避免重複加入
+		if (!user.community.includes(newCommunity._id)) {
+			user.community.push(newCommunity._id);
+		}
+
+		await user.save();
 
 		res.status(StatusCodes.CREATED).json({
 			success: true,
@@ -65,6 +82,14 @@ export const joinCommunity = async (req, res) => {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
 				message: "請提供要加入的社區 ID",
+			});
+		}
+
+		// ✅ 加上 ObjectId 格式驗證
+		if (!mongoose.isValidObjectId(communityId)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				success: false,
+				message: "請提供有效的社區 ID",
 			});
 		}
 		// console.log("👉 傳入的社區 ID:", communityId);

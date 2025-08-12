@@ -1,3 +1,4 @@
+<!-- components/EventList.vue -->
 <script setup>
 const props = defineProps({
   events: { type: Array, default: () => [] },

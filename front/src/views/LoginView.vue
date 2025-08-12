@@ -17,7 +17,7 @@
             :rules="[rules.required]"
             prepend-inner-icon="mdi-lock"
           />
-          <v-btn type="submit" color="primary" class="mt-4" block>登入</v-btn>
+          <v-btn type="submit" color="primary" class="mt-4" block :loading="loading">登入</v-btn>
         </v-form>
         <div class="text-caption mt-4 text-center">
           尚未註冊？<router-link to="/register">前往註冊</router-link>
@@ -28,63 +28,53 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-
 import api from '@/services/api.js'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const form = reactive({
-  account: '',
-  password: '',
-})
+const form = reactive({ account: '', password: '' })
+const loading = ref(false)
 
 const rules = {
   required: (v) => !!v || '此欄位為必填',
 }
 
 const handleLogin = async () => {
+  if (!form.account || !form.password) return
+  loading.value = true
   try {
-    // 登入：送出帳號密碼
+    // 1) 登入拿 token
     const res = await api.post('/users/login', {
-      account: form.account,
-      password: form.password,
+      account: form.account.trim(),
+      password: form.password.trim(),
     })
+    const { token } = res.data
 
-    const { token, user } = res.data
-    // ---暫存初步資料---
-    //  寫入 localStorage 給 axios 用
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
-
-    //  寫入 Pinia 暫存
+    // 2) 存 token（攔截器會自動帶 Authorization）
     userStore.token = token
-    userStore.user = user
+    localStorage.setItem('token', token)
 
-    // 取得"完整"使用者資料（含社區）
+    // 3) 立刻刷新 /users/me，拿「經 transform」的完整 user
     const meRes = await api.get('/users/me')
     const fullUser = meRes.data.user
 
-    // 覆蓋更新本地的 userStore 和 localStorage
+    // 4) 存到 store / localStorage
     userStore.user = fullUser
     localStorage.setItem('user', JSON.stringify(fullUser))
 
-    // 根據是否加入社區決定導頁
-    if (!fullUser.community || fullUser.community.length === 0) {
-      router.push('/community/join')
-    } else {
-      router.push('/dashboard')
-    }
-
-    //  等 token 確保寫入完成
-    await api.get('/users/me') // 強迫 axios 攔截器生效
-    router.push('/dashboard') // 再跳轉
+    // 5) 導頁
+    const hasCommunity = Array.isArray(fullUser.community) && fullUser.community.length > 0
+    router.push(hasCommunity ? '/dashboard' : '/community/join')
   } catch (err) {
     console.error('❌ 登入失敗', err)
-    alert('登入失敗，請檢查帳號密碼')
+    const msg = err?.response?.data?.message || '登入失敗，請檢查帳號密碼'
+    alert(msg)
+  } finally {
+    loading.value = false
   }
 }
 </script>

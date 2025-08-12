@@ -4,6 +4,8 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import { StatusCodes } from "http-status-codes";
+import { mongooseIdPlugin } from "./utils/mongooseIdPlugin.js";
+mongoose.plugin(mongooseIdPlugin);
 
 // 引入使用者 跟 社區路由
 import userRouter from "./routes/user.js";
