@@ -31,7 +31,13 @@
           <v-col cols="12" md="9">
             <v-row>
               <v-col v-for="post in filteredPosts" :key="post._id" cols="12" sm="6" md="4">
-                <v-card class="pa-4" style="height: 200px">
+                <v-card
+                  class="pa-4 cursor-pointer"
+                  hover
+                  :ripple="true"
+                  style="height: 200px"
+                  @click="handleOpen(post)"
+                >
                   <div class="text-subtitle-1 font-weight-medium mb-1">{{ post.title }}</div>
                   <div class="text-caption mb-2">{{ categoryName(post.category) }}</div>
                   <div class="text-truncate">{{ post.content }}</div>
@@ -46,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { toId } from '@/utils/id'
@@ -57,7 +63,12 @@ const router = useRouter()
 const posts = ref([])
 const filter = ref('全部')
 
-const categories = ['全部', '推薦分享', '二手交換', '失物招領', '求助協尋']
+const categories = ['全部', '鄰里閒聊', '推薦分享', '二手交換', '失物招領', '求助協尋', '其他']
+
+const handleOpen = (post) => {
+  if (!post?._id) return
+  router.push({ name: 'post.detail', params: { id: post._id }, query: { filter: filter.value } })
+}
 
 const fetchPosts = async () => {
   try {
@@ -65,15 +76,17 @@ const fetchPosts = async () => {
     console.log('✅ 正確取得 communityId:', communityId)
 
     const res = await api.get(`/posts/community/${communityId}`)
-    posts.value = res.data.posts
+    console.log('🔥 API 回傳內容:', res.data)
+
+    posts.value = res.data.items
   } catch (err) {
     console.error('❌ 無法取得貼文', err)
   }
 }
 
 const filteredPosts = computed(() => {
-  if (filter.value === '全部') return posts.value
-  return posts.value.filter((p) => p.category === filter.value)
+  if (filter.value === '全部') return posts.value || []
+  return (posts.value || []).filter((p) => p.category === filter.value)
 })
 
 const categoryName = (key) => key || '未分類'
@@ -81,6 +94,10 @@ const categoryName = (key) => key || '未分類'
 const goToCreate = () => {
   router.push(`/community/${route.params.communityId}/posts/create`)
 }
+
+watch(posts, (newVal) => {
+  console.log('🧪 posts:', newVal)
+})
 
 onMounted(fetchPosts)
 </script>

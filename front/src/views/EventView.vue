@@ -46,6 +46,8 @@ import EventList from '@/components/EventList.vue'
 import EventDetail from '@/components/EventDetail.vue'
 import BackToDashboard from '@/components/BackToDashboard.vue'
 import { toId } from '@/utils/id.js'
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
 
 const router = useRouter()
 const { communityId } = useCommunityId()
@@ -66,7 +68,7 @@ function showToast(message, color = 'success') {
   snackbar.value.show = true
 }
 
-const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+const currentUser = userStore.user || {}
 const myId = toId(currentUser)
 
 const isSelfRegistered = computed(() => {
