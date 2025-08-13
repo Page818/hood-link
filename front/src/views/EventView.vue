@@ -70,7 +70,8 @@ const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
 const myId = toId(currentUser)
 
 const isSelfRegistered = computed(() => {
- return (detail.value?.participants ?? []).includes(myId)})
+  return (detail.value?.participants ?? []).includes(myId)
+})
 let lastFetchedDetailId = null
 
 async function safeApiCall(promise) {
