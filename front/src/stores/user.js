@@ -9,6 +9,7 @@ export const useUserStore = defineStore('user', {
   actions: {
     setUser(data) {
       this.user = data
+      localStorage.setItem('user', JSON.stringify(data))
     },
     logout() {
       this.user = null

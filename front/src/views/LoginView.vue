@@ -63,7 +63,8 @@ const handleLogin = async () => {
     const fullUser = meRes.data.user
 
     // 4) 存到 store / localStorage
-    userStore.user = fullUser
+    // userStore.user = fullUser
+    userStore.setUser(fullUser)
     localStorage.setItem('user', JSON.stringify(fullUser))
 
     // 5) 導頁
