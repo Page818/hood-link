@@ -58,7 +58,7 @@ const router = createRouter({
       component: PostListView,
     },
     {
-      path: '/community/:communityId/posts/:id',
+      path: '/community/:communityId/posts/:postId',
       name: 'post.detail',
       component: PostDetailView,
     },

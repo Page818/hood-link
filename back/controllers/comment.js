@@ -25,6 +25,9 @@ export const createComment = async (req, res) => {
 				message: "請輸入留言內容",
 			});
 		}
+
+		// 驗證貼文是否存在 & 權限
+
 		const post = await Post.findById(postId).select("community");
 		if (!post) {
 			return res
@@ -42,6 +45,9 @@ export const createComment = async (req, res) => {
 			content,
 			creator: req.user._id,
 		});
+
+		await comment.populate("creator", "name email");
+
 		return res.status(StatusCodes.CREATED).json({
 			success: true,
 			message: "留言成功",
@@ -59,6 +65,7 @@ export const createComment = async (req, res) => {
 export const getCommentsByPost = async (req, res) => {
 	try {
 		const { postId } = req.params;
+		const { sort } = req.query; // 新增 query 參數控制排序
 
 		if (!mongoose.isValidObjectId(postId)) {
 			return res
@@ -79,9 +86,14 @@ export const getCommentsByPost = async (req, res) => {
 				.status(StatusCodes.FORBIDDEN)
 				.json({ success: false, message: "你沒有權限查看留言" });
 		}
+		// ✅ 支援 sort=latest（最新在前）或 sort=oldest（最舊在前）
+		let sortOrder = { createdAt: 1 }; // 預設最舊在前
+		if (sort === "latest") {
+			sortOrder = { createdAt: -1 };
+		}
 
 		const comments = await Comment.find({ post: postId })
-			.sort({ createdAt: 1 })
+			.sort(sortOrder)
 			.populate("creator", "name email");
 
 		return res.status(StatusCodes.OK).json({ success: true, comments });

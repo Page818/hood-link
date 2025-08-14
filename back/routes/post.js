@@ -22,7 +22,8 @@ router.put("/:postId", auth, updatePost);
 router.delete("/:postId", auth, deletePost);
 
 // 查單一貼文
-router.get("/id/:postId", auth, getPostById);
+// router.get("/id/:postId", auth, getPostById);
+router.get("/community/:communityId/posts/:postId", auth, getPostById);
 
 // 貼文列表
 router.get("/community/:communityId", auth, getPostsByCommunity);

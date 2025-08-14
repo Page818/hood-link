@@ -54,8 +54,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/services/api'
-import { toId } from '@/utils/id'
+import api from '@/services/api.js'
+import { toId } from '@/utils/id.js'
 import BackToDashboard from '@/components/BackToDashboard.vue'
 
 const route = useRoute()
@@ -66,10 +66,20 @@ const filter = ref('全部')
 const categories = ['全部', '鄰里閒聊', '推薦分享', '二手交換', '失物招領', '求助協尋', '其他']
 
 const handleOpen = (post) => {
-  if (!post?._id) return
-  router.push({ name: 'post.detail', params: { id: post._id }, query: { filter: filter.value } })
-}
+  if (!post?._id) {
+    console.error('❌ 沒有取得 post._id', post)
+    return
+  }
 
+  router.push({
+    name: 'post.detail', // 使用已設定的命名路由
+    params: {
+      communityId: toId(route.params.communityId), // 社區 ID
+      postId: toId(post._id), // 貼文 ID
+    },
+    query: { filter: filter.value }, // 保留分類篩選狀態
+  })
+}
 const fetchPosts = async () => {
   try {
     const communityId = toId(route.params.communityId)
@@ -92,7 +102,9 @@ const filteredPosts = computed(() => {
 const categoryName = (key) => key || '未分類'
 
 const goToCreate = () => {
-  router.push(`/community/${route.params.communityId}/posts/create`)
+  router.push({
+    path: `/community/${toId(route.params.communityId)}/posts/create`,
+  })
 }
 
 watch(posts, (newVal) => {
