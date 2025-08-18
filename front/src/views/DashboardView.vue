@@ -16,10 +16,10 @@
       </div>
 
       <!-- 已加入社區 -->
-      <div v-else>
+      <div v-else-if="user && !hasNoCommunity">
         <v-select
           v-model="selectedCommunity"
-          :items="user.community"
+          :items="user?.community || []"
           item-title="name"
           item-value="_id"
           label="選擇社區"
@@ -66,7 +66,9 @@ onMounted(async () => {
     }
   } catch (err) {
     console.error('❌ 載入使用者資料失敗', err)
+    localStorage.removeItem('token')
     alert('無法載入使用者資料，請重新登入')
+    router.push('/login')
   } finally {
     loading.value = false
   }
@@ -74,13 +76,19 @@ onMounted(async () => {
 
 // 安全判斷：是否尚未加入任何社區
 const hasNoCommunity = computed(() => {
-  return Array.isArray(user.value?.community) && user.value.community.length === 0
+  // user 還沒載到，就視為「尚未加入社區」（避免渲染已加入社區區塊）
+  if (!user.value) return true
+  const arr = user.value.community
+  return !Array.isArray(arr) || arr.length === 0
 })
 
 // 是否為該社區管理員
 const isAdmin = computed(() => {
-  if (!user.value || !selectedCommunity.value) return false
-  return selectedCommunity.value.admins?.includes(user.value.id)
+  const u = user.value
+  const c = selectedCommunity.value
+  if (!u || !c || !Array.isArray(c.admins)) return false
+  // 依你的後端，可能是 u._id 而非 u.id
+  return c.admins.includes(u._id || u.id)
 })
 
 // 導向社區大廳
@@ -101,5 +109,6 @@ const goToAdmin = () => {
   /* 可放在 public 資料夾 */
   background-repeat: repeat;
   /* background-size: 100px; */
+  width: 1200px;
 }
 </style>

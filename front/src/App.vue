@@ -1,72 +1,88 @@
 <script setup>
-import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useUserStore } from '@/stores/user' // 你專案路徑用 stores
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
-const token = computed(() => localStorage.getItem('token'))
+// 用 computed，切換路由時會即時更新 layout
+const layout = computed(() => route.meta.layout || 'default')
 
-// 已登入 → 若有社區，用第一個社區當首頁；否則去 app.dashboard
-// 未登入 → 去登入頁
-const defaultCommunityId = computed(() => userStore.user?.community?.[0]?._id || null)
+// 判斷是否已登入（用 store 或 localStorage 皆可）
+const isAuthed = computed(() => !!userStore.token || !!localStorage.getItem('token'))
 
-const homeLink = computed(() => {
-  if (!token.value) return { name: 'auth.login' }
-  return defaultCommunityId.value
-    ? { name: 'community.dashboard', params: { communityId: defaultCommunityId.value } }
-    : { name: 'app.dashboard' }
-})
+const goDashboard = () => {
+  router.push({ name: 'app.dashboard' })
+}
 
-function goHome() {
-  const target = homeLink.value
-  // ✅ 避免導向「同一路由」造成不必要的更新
-  if (
-    route.name === target.name &&
-    JSON.stringify(route.params) === JSON.stringify(target.params || {})
-  ) {
-    return
-  }
-  router.push(target)
+const handleLogout = () => {
+  // 清掉登入資訊
+  userStore.logout?.()
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  router.push({ name: 'auth.login' })
 }
 </script>
 
 <template>
   <v-app>
-    <v-app-bar app color="white" elevation="2">
-      <v-container class="d-flex justify-space-between align-center">
-        <!-- ✅ 用 named route，別再用 "/" -->
-        <a class="text-decoration-none" @click.prevent="goHome">
-          <h2 class="text-h6 font-weight-bold">好鄰聚 <span class="text-blue">hood-link</span></h2>
-        </a>
-
-        <!-- 右側：登入/註冊（未登入才顯示） -->
-        <div class="d-flex gap-2">
-          <RouterLink
-            v-if="!token"
-            :to="{ name: 'auth.login' }"
-            class="text-caption text-decoration-none"
-            >登入</RouterLink
-          >
-          <RouterLink
-            v-if="!token"
-            :to="{ name: 'auth.register' }"
-            class="text-caption text-decoration-none"
-            >註冊</RouterLink
-          >
-
-          <!-- 已登入可放「我的大廳」；可選 -->
-          <RouterLink v-else :to="homeLink" class="text-caption text-decoration-none"
-            >我的大廳</RouterLink
-          >
-        </div>
-      </v-container>
+    <!-- 全站共用 AppBar：可依需求顯示/隱藏 -->
+    <v-app-bar v-if="layout !== 'auth'" color="surface" elevation="2" density="comfortable">
+      <v-app-bar-title class="appbar-title clickable" @click="goDashboard">
+        好鄰聚<span class="text-medium-emphasis">hood-link</span>
+      </v-app-bar-title>
+      <template #append>
+        <!-- 放導覽、使用者選單等 -->
+        <v-btn
+          v-if="isAuthed"
+          size="small"
+          variant="text"
+          prepend-icon="mdi-logout"
+          @click="handleLogout"
+        >
+          登出
+        </v-btn>
+      </template>
     </v-app-bar>
 
     <v-main>
-      <RouterView />
+      <!-- 依 layout 切換 -->
+      <DefaultLayout v-if="layout === 'default'">
+        <RouterView />
+      </DefaultLayout>
+
+      <AuthLayout v-else-if="layout === 'auth'">
+        <RouterView />
+      </AuthLayout>
     </v-main>
+
+    <!-- 可選：全站共用 Footer（登入註冊頁多半不顯示） -->
+    <v-footer v-if="layout !== 'auth'" app color="transparent" class="text-medium-emphasis">
+      <div class="mx-auto text-caption py-4">© {{ new Date().getFullYear() }} 好鄰聚</div>
+    </v-footer>
   </v-app>
 </template>
+
+<script>
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
+export default { components: { DefaultLayout, AuthLayout } }
+</script>
+
+<style>
+/* 全域：更好的可讀性 */
+html,
+body,
+#app {
+  height: 100%;
+}
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.appbar-title:hover {
+  opacity: 0.85;
+}
+</style>

@@ -1,29 +1,56 @@
 <template>
-  <v-container class="fill-height d-flex justify-center align-center">
-    <v-card class="pa-6" max-width="400">
-      <v-card-title>登入《好鄰聚》</v-card-title>
-      <v-card-text>
-        <v-form @submit.prevent="handleLogin">
-          <v-text-field
-            v-model="form.account"
-            label="手機號碼或 Email"
-            :rules="[rules.required]"
-            prepend-inner-icon="mdi-account"
-          />
-          <v-text-field
-            v-model="form.password"
-            label="密碼"
-            type="password"
-            :rules="[rules.required]"
-            prepend-inner-icon="mdi-lock"
-          />
-          <v-btn type="submit" color="primary" class="mt-4" block :loading="loading">登入</v-btn>
-        </v-form>
-        <div class="text-caption mt-4 text-center">
-          尚未註冊？<router-link to="/register">前往註冊</router-link>
-        </div>
-      </v-card-text>
-    </v-card>
+  <!-- 背景要鋪滿請加 fluid -->
+  <v-container fluid class="fill-height loginBg d-flex align-center justify-center">
+    <v-row class="ma-0 w-100" align="center" justify="center">
+      <v-col cols="12" class="d-flex justify-center">
+        <!-- 卡片寬度由 loginCard 控制 -->
+        <v-card class="pa-6 pa-sm-8 loginCard" elevation="6">
+          <v-card-title class="text-h6 text-center pb-2">登入《好鄰聚》</v-card-title>
+          <v-card-text class="pt-0">
+            <v-form @submit.prevent="handleLogin">
+              <v-text-field
+                v-model="form.account"
+                label="手機號碼或 Email"
+                :rules="[rules.required]"
+                prepend-inner-icon="mdi-account"
+                density="comfortable"
+                hide-details="auto"
+                class="mb-3"
+                autocomplete="username"
+              />
+              <v-text-field
+                v-model="form.password"
+                :type="showPwd ? 'text' : 'password'"
+                label="密碼"
+                :rules="[rules.required]"
+                prepend-inner-icon="mdi-lock"
+                :append-inner-icon="showPwd ? 'mdi-eye-off' : 'mdi-eye'"
+                @click:append-inner="showPwd = !showPwd"
+                density="comfortable"
+                hide-details="auto"
+                class="mb-1"
+                autocomplete="current-password"
+              />
+
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                class="mt-4"
+                block
+                :loading="loading"
+              >
+                登入
+              </v-btn>
+            </v-form>
+
+            <div class="text-caption mt-6 text-center">
+              尚未註冊？<router-link to="/register">前往註冊</router-link>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
@@ -38,6 +65,7 @@ const userStore = useUserStore()
 
 const form = reactive({ account: '', password: '' })
 const loading = ref(false)
+const showPwd = ref(false)
 
 const rules = {
   required: (v) => !!v || '此欄位為必填',
@@ -47,27 +75,19 @@ const handleLogin = async () => {
   if (!form.account || !form.password) return
   loading.value = true
   try {
-    // 1) 登入拿 token
     const res = await api.post('/users/login', {
       account: form.account.trim(),
       password: form.password.trim(),
     })
     const { token } = res.data
-
-    // 2) 存 token（攔截器會自動帶 Authorization）
     userStore.token = token
     localStorage.setItem('token', token)
 
-    // 3) 立刻刷新 /users/me，拿「經 transform」的完整 user
     const meRes = await api.get('/users/me')
     const fullUser = meRes.data.user
-
-    // 4) 存到 store / localStorage
-    // userStore.user = fullUser
     userStore.setUser(fullUser)
     localStorage.setItem('user', JSON.stringify(fullUser))
 
-    // 5) 導頁
     const hasCommunity = Array.isArray(fullUser.community) && fullUser.community.length > 0
     router.push(hasCommunity ? '/dashboard' : '/community/join')
   } catch (err) {
@@ -79,3 +99,29 @@ const handleLogin = async () => {
   }
 }
 </script>
+
+<style scoped>
+/* 背景鋪滿整個畫面寬度與高度 */
+.loginBg {
+  min-height: 100vh;
+  background-color: #f9f5f0;
+  background-image: url('/more-leaves-on-green.png');
+  background-repeat: repeat;
+  padding: 16px;
+}
+
+/* 內容卡片：手機 80%，桌機最多 450px */
+.loginCard {
+  width: 80%;
+  max-width: 450px;
+  border-radius: 20px;
+}
+
+/* 手機額外優化圓角與內距 */
+@media (max-width: 599px) {
+  .loginCard {
+    border-radius: 16px;
+    padding: 20px !important;
+  }
+}
+</style>
