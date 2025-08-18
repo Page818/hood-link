@@ -180,6 +180,8 @@ async function registerEvent() {
   loading.value.register = true
   try {
     const eventId = toId(detail.value)
+    const prevCount = detail.value?.participants?.length ?? 0
+
     const { data } = await safeApiCall(api.post(`/events/register/${eventId}`))
 
     if (data?.event) {
@@ -190,7 +192,9 @@ async function registerEvent() {
     } else {
       await fetchDetail(true)
     }
-    showToast(data?.message || '報名成功！', 'success')
+    const newCount = detail.value?.participants?.length ?? prevCount
+
+    showToast(`報名成功！目前已報名：${newCount} 人`, 'success')
   } catch (err) {
     console.error('❌ 報名失敗', err)
     showToast(err?.response?.data?.message || '報名失敗', 'error')
@@ -205,6 +209,8 @@ async function cancelRegistration() {
   loading.value.cancel = true
   try {
     const eventId = toId(detail.value)
+    const prevCount = detail.value?.participants?.length ?? 0
+
     const { data } = await safeApiCall(api.delete(`/events/register/${eventId}`))
 
     if (data?.event) {
@@ -215,7 +221,9 @@ async function cancelRegistration() {
     } else {
       await fetchDetail(true)
     }
-    showToast(data?.message || '已取消報名', 'success')
+    const newCount = detail.value?.participants?.length ?? prevCount
+
+    showToast(`已取消報名，目前已報名：${newCount} 人`, 'success')
   } catch (err) {
     console.error('❌ 取消報名失敗', err)
     showToast(err?.response?.data?.message || '取消報名失敗', 'error')
