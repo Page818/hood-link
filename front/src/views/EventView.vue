@@ -1,7 +1,7 @@
 <!-- views/EventView.vue -->
 <template>
   <v-container class="py-8">
-    <BackToDashboard />
+    <BackToDashboard :community-id="communityId" />
 
     <div class="d-flex align-center justify-space-between mb-4">
       <h1 class="text-h5 font-weight-bold">活動一覽</h1>
@@ -69,11 +69,13 @@ function showToast(message, color = 'success') {
 }
 
 const currentUser = userStore.user || {}
-const myId = toId(currentUser)
+// const myId = toId(currentUser)
 
-const isSelfRegistered = computed(() => {
-  return (detail.value?.participants ?? []).includes(myId)
-})
+// const isSelfRegistered = computed(() => {
+//   return (detail.value?.participants ?? []).includes(myId)
+// })
+const myId = computed(() => toId(userStore.user))
+const isSelfRegistered = computed(() => (detail.value?.participants ?? []).includes(myId.value))
 let lastFetchedDetailId = null
 
 async function safeApiCall(promise) {
@@ -88,13 +90,26 @@ async function safeApiCall(promise) {
 }
 
 // 初始化進頁
+// onMounted(async () => {
+//   if (!communityId.value) {
+//     router.push({ name: 'community.join' })
+//     return
+//   }
+//   await fetchList()
+// })
 onMounted(async () => {
+  // 先確保 user 就緒（Pinia action，會在需要時呼叫 /users/me）
+  await userStore.ensureUser(api)
+
+  // 沒有社區就導去加入社區
   if (!communityId.value) {
     router.push({ name: 'community.join' })
     return
   }
+
+  // 載入活動清單
   await fetchList()
-})
+}) // ← 注意：這裡同時關閉了函式的大括號 } 與 onMounted 的右括號 )
 
 // 切換社區時刷新
 watch(() => communityId.value, fetchList)

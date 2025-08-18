@@ -47,15 +47,29 @@
       <!-- 桌機版按鈕 -->
       <div class="mt-6 d-none d-sm-flex">
         <v-spacer />
-        <v-btn
+        <v-btn v-if="!isOpen" disabled>已截止</v-btn>
+
+        <!-- <v-btn
           v-if="!isSelfRegistered && isOpen"
           color="primary"
           :loading="isRegistering"
           @click="$emit('register')"
         >
           我要報名
-        </v-btn>
+        </v-btn> -->
+
         <v-btn
+          v-else-if="isSelfRegistered"
+          color="secondary"
+          variant="tonal"
+          :loading="isCancelling"
+          @click="$emit('cancel')"
+          >取消報名</v-btn
+        >
+        <v-btn v-else color="primary" :loading="isRegistering" @click="$emit('register')"
+          >我要報名</v-btn
+        >
+        <!-- <v-btn
           v-else
           color="secondary"
           variant="tonal"
@@ -63,17 +77,26 @@
           @click="$emit('cancel')"
         >
           取消報名
-        </v-btn>
+        </v-btn> -->
       </div>
 
       <!-- 手機版浮動按鈕 -->
-      <v-btn
+      <!-- <v-btn
         class="fab-mobile d-sm-none"
         :color="!isSelfRegistered && isOpen ? 'primary' : 'secondary'"
         :loading="isSelfRegistered ? isCancelling : isRegistering"
         @click="isSelfRegistered ? $emit('cancel') : $emit('register')"
       >
         {{ !isSelfRegistered && isOpen ? '我要報名' : '取消報名' }}
+      </v-btn> -->
+      <v-btn
+        class="fab-mobile d-sm-none"
+        :disabled="!isOpen"
+        :color="!isOpen ? undefined : isSelfRegistered ? 'secondary' : 'primary'"
+        :loading="isSelfRegistered ? isCancelling : isRegistering"
+        @click="!isOpen ? null : isSelfRegistered ? $emit('cancel') : $emit('register')"
+      >
+        {{ !isOpen ? '已截止' : isSelfRegistered ? '取消報名' : '我要報名' }}
       </v-btn>
     </template>
 
