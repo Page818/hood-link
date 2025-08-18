@@ -10,6 +10,7 @@ import EventView from '@/views/EventView.vue'
 import CommunityJoinView from '@/views/CommunityJoin.vue'
 import PostListView from '@/views/PostListView.vue'
 import PostDetailView from '@/views/PostDetailView.vue'
+import PostCreateView from '@/views/PostCreateView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -73,6 +74,13 @@ const router = createRouter({
       path: '/community/:communityId/posts',
       name: 'community.posts',
       component: PostListView,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    {
+      path: '/community/:communityId/posts/create',
+      name: 'post.create',
+      component: PostCreateView,
       props: true,
       meta: { layout: 'default' },
     },

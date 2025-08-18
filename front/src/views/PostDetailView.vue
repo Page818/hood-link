@@ -1,39 +1,115 @@
 <template>
   <v-container class="py-8 post-detail-container">
-    <BackToDashboard />
+    <BackToDashboard :communityId="route.params.communityId || communityId" />
 
     <v-row>
       <!-- 貼文內容區 -->
       <v-col cols="12" md="8">
         <v-card>
-          <!-- 貼文圖片 -->
-          <v-img v-if="post?.image" :src="post.image" height="300" cover></v-img>
+          <!-- 圖片（瀏覽模式） -->
+          <v-img v-if="post?.image && !isEditing" :src="post.image" height="300" cover />
 
-          <!-- 貼文內容 -->
-          <v-card-title class="text-h6 font-weight-bold">
-            {{ post?.title }}
+          <!-- 標題列：返回 + 編輯/刪除 -->
+          <v-card-title class="d-flex align-center">
+            <span class="text-h6 font-weight-bold">
+              {{ isEditing ? '編輯貼文' : post?.title || '' }}
+            </span>
+            <v-spacer />
+
+            <v-btn variant="tonal" prepend-icon="mdi-chevron-left" @click="goBack">返回列表</v-btn>
+
+            <template v-if="isOwner">
+              <v-btn
+                v-if="!isEditing"
+                class="ml-2"
+                variant="tonal"
+                color="primary"
+                @click="startEdit"
+                >編輯</v-btn
+              >
+
+              <v-btn
+                v-if="!isEditing"
+                class="ml-2"
+                variant="tonal"
+                color="error"
+                @click="deletePost"
+                >刪除貼文</v-btn
+              >
+            </template>
           </v-card-title>
 
-          <v-card-subtitle>
+          <!-- 資訊列（瀏覽模式） -->
+          <v-card-subtitle v-if="!isEditing">
             {{ post?.category }}・{{ formatTime(post?.createdAt) }}
           </v-card-subtitle>
 
-          <v-card-text>
-            {{ post?.content }}
+          <!-- 內容（瀏覽模式） -->
+          <v-card-text v-if="!isEditing">
+            <div class="mb-3">{{ post?.content }}</div>
           </v-card-text>
 
-          <!-- 返回按鈕（僅手機顯示） -->
-          <v-card-actions>
-            <v-btn v-if="isMobile" color="primary" @click="goBack"> 返回列表 </v-btn>
-          </v-card-actions>
+          <!-- 編輯模式 -->
+          <v-card-text v-else>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="form.title"
+                  label="標題"
+                  variant="outlined"
+                  :rules="[(v) => !!v || '必填']"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="form.category"
+                  label="分類"
+                  :items="POST_CATEGORIES"
+                  variant="outlined"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="form.image"
+                  label="圖片 URL（選填）"
+                  variant="outlined"
+                  placeholder="https://…"
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-textarea
+                  v-model="form.content"
+                  label="內容"
+                  auto-grow
+                  variant="outlined"
+                  :rules="[(v) => !!v || '必填']"
+                />
+              </v-col>
+            </v-row>
+
+            <div class="d-flex justify-end ga-2">
+              <v-btn variant="tonal" @click="cancelEdit">取消</v-btn>
+              <v-btn color="primary" :loading="saving" @click="saveEdit">儲存</v-btn>
+            </div>
+          </v-card-text>
         </v-card>
+
+        <v-alert v-if="error" type="error" class="mt-4">{{ error }}</v-alert>
+        <v-skeleton-loader v-if="loading" class="mt-4" type="article" />
       </v-col>
 
       <!-- 留言區 -->
       <v-col cols="12" md="4">
-        <CommentsPane :postId="postId" :communityId="communityId" />
+        <CommentsPane :postId="postId" :current-user-id="myId" />
       </v-col>
     </v-row>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2200" rounded="pill">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -42,62 +118,116 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api.js'
 import BackToDashboard from '@/components/BackToDashboard.vue'
+import CommentsPane from '@/components/comments/CommentsPane.vue'
 import { useDisplay } from 'vuetify'
 import { format } from 'date-fns'
 import { zhTW } from 'date-fns/locale'
-import CommentsPane from '@/components/comments/CommentsPane.vue'
+import { useUserStore } from '@/stores/user'
+import { toId } from '@/utils/id.js'
 
-// 取得 route 與 router
+const POST_CATEGORIES = ['鄰里閒聊', '推薦分享', '二手交換', '失物招領', '求助協尋', '其他']
+
 const route = useRoute()
 const router = useRouter()
-
-// 響應式判斷是否為手機
+const userStore = useUserStore()
 const { mobile } = useDisplay()
+
 const isMobile = computed(() => mobile.value)
-
-// 格式化時間
-const formatTime = (time) => {
-  if (!time) return ''
-  return format(new Date(time), 'yyyy-MM-dd HH:mm', { locale: zhTW })
-}
-
-// API 資料
-const post = ref(null)
-const loading = ref(false)
-const error = ref(null)
-
-// 從 URL 拿社區與貼文 ID
 const communityId = computed(() => route.params.communityId)
 const postId = computed(() => route.params.postId)
 
-// 取得貼文
-const fetchPost = async () => {
+const post = ref(null)
+const loading = ref(false)
+const saving = ref(false)
+const error = ref('')
+
+const snackbar = ref({ show: false, color: 'success', message: '' })
+const showToast = (m, color = 'success') => {
+  snackbar.value = { show: true, color, message: m }
+}
+
+const myId = computed(() => toId(userStore.user))
+const isOwner = computed(() => toId(post.value?.creator) === myId.value)
+
+const isEditing = ref(false)
+const form = ref({ title: '', category: '其他', image: '', content: '' })
+
+const formatTime = (time) =>
+  time ? format(new Date(time), 'yyyy-MM-dd HH:mm', { locale: zhTW }) : ''
+
+async function fetchPost() {
   try {
     loading.value = true
-    const res = await api.get(`/posts/community/${communityId.value}/posts/${postId.value}`)
-    post.value = res.data.post
-  } catch (err) {
-    error.value = err.response?.data?.message || '無法取得貼文'
+    await userStore.ensureUser?.(api)
+    const res = await api.get(`/posts/${postId.value}`)
+    post.value = res.data.post || res.data
+  } catch (e) {
+    error.value = e?.response?.data?.message || '無法取得貼文'
   } finally {
     loading.value = false
   }
 }
 
-// 返回上一頁
-const goBack = () => {
-  router.push(`/community/${communityId.value}/posts`)
+function goBack() {
+  const category = route.query.category || '全部'
+  router.push({ path: `/community/${communityId.value}/posts`, query: { category } })
 }
 
-// 初始化
-onMounted(() => {
-  fetchPost()
-})
+function startEdit() {
+  if (!post.value) return
+  isEditing.value = true
+  form.value = {
+    title: post.value.title || '',
+    category: post.value.category || '其他',
+    image: post.value.image || '',
+    content: post.value.content || '',
+  }
+}
+
+function cancelEdit() {
+  isEditing.value = false
+}
+
+async function saveEdit() {
+  if (!isOwner.value) return
+  saving.value = true
+  try {
+    const payload = {
+      title: form.value.title,
+      content: form.value.content,
+      image: form.value.image,
+      category: form.value.category,
+    }
+    const { data } = await api.put(`/posts/${postId.value}`, payload)
+    post.value = data.post || post.value
+    showToast('已更新貼文')
+    isEditing.value = false
+  } catch (e) {
+    showToast(e?.response?.data?.message || '更新失敗', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deletePost() {
+  if (!isOwner.value || !post.value) return
+  if (!confirm('確定要刪除這篇貼文嗎？')) return
+  try {
+    await api.delete(`/posts/${postId.value}`)
+    showToast('已刪除貼文')
+    goBack()
+  } catch (e) {
+    showToast(e?.response?.data?.message || '刪除失敗', 'error')
+  }
+}
+
+onMounted(fetchPost)
 </script>
 
 <style scoped>
 .post-detail-container {
-  max-width: 1200px; /* 最大寬度 */
+  max-width: 1200px;
   width: 1200px;
-  margin: 0 auto; /* 置中 */
+  margin: 0 auto;
 }
 </style>

@@ -1,21 +1,19 @@
-<!-- 留言列表 + 輸入框 -->
-<!-- src/components/comments/CommentsPane.vue -->
-
+<!-- /components/comments/CommentsPane.vue -->
 <template>
-  <v-card v-if="currentUserId" class="h-100 d-flex flex-column">
-    <!-- 標題 -->
+  <v-card class="h-100 d-flex flex-column">
     <div class="px-4 py-3 text-subtitle-1 font-weight-medium">留言</div>
     <v-divider />
 
-    <!-- 留言列表 -->
+    <!-- 內容區 -->
     <div class="px-4 py-3 flex-1 overflow-y-auto">
       <v-skeleton-loader v-if="loading" type="list-item-two-line@4" />
+      <v-alert v-else-if="error" type="error" variant="tonal" class="mb-3">{{ error }}</v-alert>
+
       <template v-else>
         <div v-for="c in comments" :key="c._id" class="mb-4">
-          <!-- <CommentItem :item="c" :currentUserId="currentUserId" /> -->
           <CommentItem
             :item="c"
-            :currentUserId="currentUserId"
+            :currentUserId="myId"
             @update="handleUpdate"
             @delete="handleDelete"
           />
@@ -36,10 +34,15 @@
         variant="outlined"
         placeholder="寫下留言…"
         hide-details
-        @keydown.enter.exact.prevent="send"
+        :disabled="!isAuthed"
+        @keydown.enter.exact.prevent="submit"
       />
-      <v-btn :loading="sending" @click="send">送出</v-btn>
+      <v-btn :loading="sending" :disabled="!draft.trim() || !isAuthed" @click="submit">送出</v-btn>
     </div>
+
+    <v-alert v-if="!isAuthed" type="info" variant="tonal" class="mx-4 mb-3">
+      請先登入以留言
+    </v-alert>
   </v-card>
 </template>
 
@@ -48,98 +51,99 @@ import { ref, onMounted, watch, computed } from 'vue'
 import api from '@/services/api.js'
 import CommentItem from './CommentItem.vue'
 import { useUserStore } from '@/stores/user.js'
-
-const userStore = useUserStore()
-const currentUserId = computed(() => userStore.user?._id)
-console.log('🧪 currentUserId:', currentUserId.value)
+import { toId } from '@/utils/id.js'
 
 const props = defineProps({
   postId: { type: String, required: true },
-  sort: { type: String, default: 'oldest' },
+  sort: { type: String, default: 'oldest' }, // 'latest' | 'oldest'
+  currentUserId: { type: [String, Number, Object], required: false, default: '' },
 })
+const emit = defineEmits(['updated']) // 父層可用來同步留言數
 
+const userStore = useUserStore()
+
+// 使用者
+const myId = computed(() => {
+  return toId(props.currentUserId) || toId(userStore.user)
+})
+const isAuthed = computed(() => Boolean(myId.value))
+
+// 狀態
 const comments = ref([])
-const loading = ref(true)
-const draft = ref('')
+const loading = ref(false)
 const sending = ref(false)
+const error = ref('')
+const draft = ref('')
 
-// 抓留言列表
-const fetchComments = async () => {
+// 先確保已拉到 user（避免刷新後 myId 永遠 undefined）
+async function ensureUser() {
+  try {
+    await userStore.ensureUser?.(api)
+  } catch {}
+}
+
+async function fetchComments() {
   if (!props.postId) return
   loading.value = true
-
+  error.value = ''
   try {
+    await ensureUser()
     const { data } = await api.get(`/comments/post/${props.postId}`, {
-      params: { sort: props.sort }, // 可傳 'latest' 或 'oldest
+      params: { sort: props.sort },
     })
-
-    comments.value = data.comments || []
-  } catch (err) {
-    console.error('❌ 無法取得留言', err)
+    comments.value = data.comments || data.items || []
+    emit('updated', comments.value.length)
+  } catch (e) {
+    error.value = e?.response?.data?.message || '載入留言失敗'
   } finally {
     loading.value = false
   }
 }
 
-// 發送留言
-const send = async () => {
-  if (!draft.value.trim()) return
+async function submit() {
+  const content = draft.value.trim()
+  if (!content || !isAuthed.value) return
   sending.value = true
+  error.value = ''
   try {
-    const { data } = await api.post(`/comments/post/${props.postId}`, {
-      content: draft.value,
-    })
-
-    // 後端 createComment 已經 populate 了 creator，所以可以直接用
-    if (props.sort === 'latest') {
-      comments.value.unshift(data.comment)
-    } else {
-      comments.value.push(data.comment)
+    const { data } = await api.post(`/comments/post/${props.postId}`, { content })
+    const created = data.comment || data
+    if (!created.creator) {
+      created.creator = userStore.user || { _id: myId.value }
     }
-
+    if (props.sort === 'latest') comments.value.unshift(created)
+    else comments.value.push(created)
     draft.value = ''
-  } catch (err) {
-    console.error('❌ 無法發送留言', err)
+    emit('updated', comments.value.length)
+  } catch (e) {
+    error.value = e?.response?.data?.message || '留言失敗'
   } finally {
     sending.value = false
   }
 }
 
-// 編輯
-const handleUpdate = async ({ id, content }) => {
+async function handleUpdate({ id, content }) {
   try {
     const { data } = await api.put(`/comments/${id}`, { content })
-    const index = comments.value.findIndex((c) => c._id === id)
-    if (index !== -1) {
-      comments.value[index] = data.comment
-    }
-  } catch (err) {
-    console.error('❌ 更新留言失敗', err)
+    const updated = data.comment || data
+    const i = comments.value.findIndex((c) => c._id === id)
+    if (i !== -1) comments.value[i] = updated
+  } catch (e) {
+    error.value = e?.response?.data?.message || '更新留言失敗'
   }
 }
 
-const handleDelete = async (id) => {
+async function handleDelete(id) {
   try {
     await api.delete(`/comments/${id}`)
     comments.value = comments.value.filter((c) => c._id !== id)
-  } catch (err) {
-    console.error('❌ 刪除留言失敗', err)
+    emit('updated', comments.value.length)
+  } catch (e) {
+    error.value = e?.response?.data?.message || '刪除留言失敗'
   }
 }
-// 等待 postId 或 userStore.user 都準備好後再抓留言
-onMounted(() => {
-  if (currentUserId.value) fetchComments()
-})
-watch(
-  () => props.postId,
-  () => {
-    if (currentUserId.value) fetchComments()
-  },
-)
-watch(
-  () => userStore.user,
-  (newVal) => {
-    if (newVal && props.postId) fetchComments()
-  },
-)
+
+onMounted(fetchComments)
+watch(() => props.postId, fetchComments)
+watch(() => props.sort, fetchComments)
 </script>

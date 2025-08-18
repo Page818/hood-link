@@ -1,5 +1,4 @@
 // controllers/post.js
-
 import Post from "../models/post.js";
 import Community from "../models/community.js";
 import { StatusCodes } from "http-status-codes";
@@ -10,7 +9,6 @@ export const createPost = async (req, res) => {
 	try {
 		const { title, content, image, category, communityId } = req.body;
 
-		// 檢查必要欄位
 		if (!title || !content || !communityId) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
@@ -25,7 +23,6 @@ export const createPost = async (req, res) => {
 			});
 		}
 
-		// 檢查社區是否存在
 		const community = await Community.findById(communityId);
 		if (!community) {
 			return res.status(StatusCodes.NOT_FOUND).json({
@@ -77,7 +74,7 @@ export const updatePost = async (req, res) => {
 				message: "找不到貼文",
 			});
 		}
-		// 僅限貼文作者本人可修改
+
 		if (post.creator.toString() !== req.user._id.toString()) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
@@ -85,7 +82,6 @@ export const updatePost = async (req, res) => {
 			});
 		}
 
-		// 更新內容
 		if (title) post.title = title;
 		if (content) post.content = content;
 		if (image !== undefined) post.image = image;
@@ -126,6 +122,7 @@ export const deletePost = async (req, res) => {
 				message: "找不到貼文:(",
 			});
 		}
+
 		const isOwner = post.creator?.equals?.(req.user._id) === true;
 
 		let isCommunityAdmin = false;
@@ -182,7 +179,7 @@ export const getPostById = async (req, res) => {
 				message: "找不到貼文",
 			});
 		}
-		// 使用者需屬於貼文所屬社區（支援多社區）
+
 		const postCommunityId = post.community?._id
 			? String(post.community._id)
 			: String(post.community);
@@ -194,6 +191,7 @@ export const getPostById = async (req, res) => {
 				message: "你沒有權限查看此貼文",
 			});
 		}
+
 		return res.status(StatusCodes.OK).json({
 			success: true,
 			post,
@@ -207,12 +205,12 @@ export const getPostById = async (req, res) => {
 	}
 };
 
-// 貼文列表
+// 貼文列表（支援 page/limit/category）
 export const getPostsByCommunity = async (req, res) => {
 	try {
 		const { communityId } = req.params;
+		const { page = 1, limit = 10, category } = req.query;
 
-		// 1. 先檢查 ObjectId 合法
 		if (!mongoose.isValidObjectId(communityId)) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
@@ -220,7 +218,6 @@ export const getPostsByCommunity = async (req, res) => {
 			});
 		}
 
-		// 2. 權限檢查：該用戶有沒有在這個社區
 		const userCommunities = (req.user.community || []).map(String);
 		if (!userCommunities.includes(String(communityId))) {
 			return res.status(StatusCodes.FORBIDDEN).json({
@@ -229,15 +226,33 @@ export const getPostsByCommunity = async (req, res) => {
 			});
 		}
 
-		// 3. 查詢這個社區的貼文
-		const items = await Post.find({ community: communityId })
-			.sort({ createdAt: -1 })
-			.populate("creator", "name email")
-			.populate("community", "name");
+		const q = { community: communityId };
+		if (category && category !== "全部") {
+			q.category = category;
+		}
+
+		const pageNum = Math.max(1, Number(page) || 1);
+		const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+		const skip = (pageNum - 1) * limitNum;
+
+		const [items, total] = await Promise.all([
+			Post.find(q)
+				.sort({ createdAt: -1 })
+				.skip(skip)
+				.limit(limitNum)
+				.populate("creator", "name email")
+				.populate("community", "name"),
+			Post.countDocuments(q),
+		]);
 
 		return res.status(StatusCodes.OK).json({
 			success: true,
 			items,
+			total,
+			page: pageNum,
+			limit: limitNum,
+			totalPages: Math.max(1, Math.ceil(total / limitNum)),
+			query: { category: category || "全部" },
 		});
 	} catch (err) {
 		console.error("❌ 取得貼文列表失敗", err);
