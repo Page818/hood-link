@@ -44,6 +44,12 @@ const handleLogout = () => {
         >
           登出
         </v-btn>
+        <v-btn icon :to="{ name: 'me' }">
+          <v-avatar size="32">
+            <v-img v-if="user.avatarUrl" :src="user.avatarUrl" cover />
+            <span v-else>{{ initials(user.name) }}</span>
+          </v-avatar>
+        </v-btn>
       </template>
     </v-app-bar>
 

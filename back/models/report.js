@@ -15,7 +15,7 @@ const reportSchema = new mongoose.Schema(
 		},
 		category: {
 			type: String,
-			enum: ["水電", "設備", "環境", "其他"],
+			enum: ["水電", "設備", "環境", "其他", "治安"],
 			default: "其他",
 			required: true,
 		},

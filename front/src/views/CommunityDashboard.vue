@@ -60,7 +60,7 @@ watch(
 const features = [
   { title: '最新公告', icon: 'mdi-bullhorn-outline', name: 'community.announcements' },
   { title: '好鄰交流', icon: 'mdi-message-text-outline', name: 'community.posts' },
-  { title: '異常回報', icon: 'mdi-map-marker-alert-outline', name: 'community.reports' },
+  { title: '異常回報', icon: 'mdi-map-marker-alert-outline', name: 'reports.create' },
   { title: '活動列表', icon: 'mdi-calendar-heart', name: 'community.events' },
 ]
 

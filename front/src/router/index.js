@@ -11,6 +11,8 @@ import CommunityJoinView from '@/views/CommunityJoin.vue'
 import PostListView from '@/views/PostListView.vue'
 import PostDetailView from '@/views/PostDetailView.vue'
 import PostCreateView from '@/views/PostCreateView.vue'
+import ReportCreateView from '@/views/reports/ReportCreateView.vue'
+import MeView from '@/views/me/MeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -91,7 +93,21 @@ const router = createRouter({
       props: true,
       meta: { layout: 'default' },
     },
-
+    {
+      path: '/community/:communityId/reports/create',
+      name: 'reports.create',
+      component: ReportCreateView,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    // 個人頁面
+    {
+      path: '/me',
+      name: 'me',
+      component: MeView,
+      props: true,
+      meta: { layout: 'default' },
+    },
     // （可選）404
     // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue'), meta: { layout: 'default' } },
   ],
