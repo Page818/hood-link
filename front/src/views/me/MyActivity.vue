@@ -52,13 +52,13 @@
       <div class="d-flex ga-2">
         <v-select
           v-model="reportQ.category"
-          :items="['全部', '設備', '環境', '治安', '噪音', '停車', '其他']"
+          :items="['全部', '水電', '設備', '環境', '治安', '其他']"
           density="comfortable"
           style="max-width: 180px"
         />
         <v-select
           v-model="reportQ.status"
-          :items="['全部', 'open', 'acknowledged', 'in_progress', 'resolved', 'closed']"
+          :items="['全部', '待處理', '處理中', '已完成']"
           density="comfortable"
           style="max-width: 220px"
         />
@@ -134,6 +134,7 @@ const reportTotalPages = computed(() =>
   Math.max(1, Math.ceil(reportTotal.value / reportLimit.value)),
 )
 
+// 取我的貼文
 async function fetchMyPosts() {
   loadingPosts.value = true
   try {
@@ -152,6 +153,7 @@ async function fetchMyPosts() {
   }
 }
 
+// 取我的回報
 async function fetchMyReports() {
   loadingReports.value = true
   try {

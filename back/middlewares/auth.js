@@ -3,27 +3,37 @@ import jwt from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
 import User from "../models/user.js";
 
+/**
+ * 驗證使用者身分的中介層
+ * - 支援 Authorization: Bearer <token>
+ * - 相容舊 token（payload.userId）與新 token（payload._id）
+ * - 會把完整使用者文件（不含密碼）掛到 req.user
+ */
 const auth = async (req, res, next) => {
+	// 1) 取出 token
 	const authHeader = req.headers.authorization;
-
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
 		return res.status(StatusCodes.UNAUTHORIZED).json({
 			success: false,
 			message: "未提供驗證 token",
 		});
 	}
-
 	const token = authHeader.split(" ")[1];
 
 	try {
+		// 2) 驗證並解碼
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
-		console.log("✅ decoded：", decoded);
+		// 相容：新(_id) 與 舊(userId)
+		const decodedId = decoded._id || decoded.userId;
+		if (!decodedId) {
+			return res.status(StatusCodes.UNAUTHORIZED).json({
+				success: false,
+				message: "無效的 token",
+			});
+		}
 
-		// 從資料庫撈出使用者資料
-		// const user = await User.findById(decoded.userId);
-		const user = await User.findById(decoded.userId).select("-password");
-		req.user = user;
-
+		// 3) 撈取使用者（不含密碼）
+		const user = await User.findById(decodedId).select("-password");
 		if (!user) {
 			return res.status(StatusCodes.UNAUTHORIZED).json({
 				success: false,
@@ -31,12 +41,14 @@ const auth = async (req, res, next) => {
 			});
 		}
 
-		req.user = user; // ✅ 掛上完整 User 資料（包含 _id、role 等）
+		// 4) 掛到 req.user，後續控制器統一用 req.user._id
+		req.user = user;
 
-		next(); // ✅ 通過驗證，繼續往下走
+		// 5) 放行
+		next();
 	} catch (error) {
 		console.error("JWT 驗證失敗：", error);
-		res.status(StatusCodes.UNAUTHORIZED).json({
+		return res.status(StatusCodes.UNAUTHORIZED).json({
 			success: false,
 			message: "驗證失敗，請重新登入",
 		});

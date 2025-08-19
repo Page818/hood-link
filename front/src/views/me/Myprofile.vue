@@ -107,7 +107,7 @@ async function save() {
   if (!valid.value || !dirty.value) return
   saving.value = true
   try {
-    await api.put('/users/me', form.value)
+    await api.patch('/users/update', form.value)
     toast('資料已更新')
     emit('updated')
   } catch (e) {

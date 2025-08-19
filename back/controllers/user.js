@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import { StatusCodes } from "http-status-codes";
+import Post from "../models/post.js";
+import Report from "../models/report.js";
 
 // POST /api/users/register
 export const register = async (req, res) => {
@@ -115,7 +117,7 @@ export const login = async (req, res) => {
 		}
 
 		const token = jwt.sign(
-			{ userId: user._id, role: user.role },
+			{ _id: user._id, role: user.role },
 			process.env.JWT_SECRET,
 			{ expiresIn: "3d" }
 		);
@@ -187,6 +189,7 @@ export const updateProfile = async (req, res) => {
 			"name",
 			"email",
 			"phone",
+			"lineId",
 			"isElder",
 			"isLivingAlone",
 			"receiveDailyCheck",
@@ -200,7 +203,7 @@ export const updateProfile = async (req, res) => {
 			}
 		});
 
-		const updatedUser = await User.findByIdAndUpdate(req.user.userId, updates, {
+		const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, {
 			new: true,
 			runValidators: true,
 		});
@@ -232,5 +235,64 @@ export const updateProfile = async (req, res) => {
 			success: false,
 			message: "更新失敗",
 		});
+	}
+};
+
+// GET /api/users/me/posts
+export const getMyPosts = async (req, res) => {
+	try {
+		const page = Math.max(1, Number(req.query.page) || 1);
+		const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+		const skip = (page - 1) * limit;
+
+		const [items, total] = await Promise.all([
+			Post.find({ creator: req.user._id })
+				.sort({ createdAt: -1 })
+				.skip(skip)
+				.limit(limit)
+				.populate("community", "name"),
+			Post.countDocuments({ creator: req.user._id }),
+		]);
+
+		res.json({
+			success: true,
+			items,
+			total,
+			page,
+			limit,
+			totalPages: Math.ceil(total / limit),
+		});
+	} catch (err) {
+		console.error("❌ 取得我的貼文失敗", err);
+		res.status(500).json({ success: false, message: "無法取得我的貼文" });
+	}
+};
+// GET /api/users/me/reports
+export const getMyReports = async (req, res) => {
+	try {
+		const page = Math.max(1, Number(req.query.page) || 1);
+		const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+		const skip = (page - 1) * limit;
+
+		const [items, total] = await Promise.all([
+			Report.find({ creator: req.user._id })
+				.sort({ createdAt: -1 })
+				.skip(skip)
+				.limit(limit)
+				.populate("community", "name"),
+			Report.countDocuments({ creator: req.user._id }),
+		]);
+
+		res.json({
+			success: true,
+			items,
+			total,
+			page,
+			limit,
+			totalPages: Math.ceil(total / limit),
+		});
+	} catch (err) {
+		console.error("❌ 取得我的回報失敗", err);
+		res.status(500).json({ success: false, message: "無法取得我的回報" });
 	}
 };
