@@ -90,7 +90,7 @@ const loading = ref(false)
 const error = ref('')
 
 const page = ref(1)
-const limit = ref(10)
+const limit = ref(6)
 const total = ref(0)
 
 // 分類（注意：'全部' 不會送到後端）

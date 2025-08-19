@@ -31,14 +31,6 @@
             :aria-label="'編輯留言'"
             @click="startEdit"
           />
-          <v-btn
-            size="x-small"
-            variant="text"
-            icon="mdi-delete"
-            color="error"
-            :aria-label="'刪除留言'"
-            @click="$emit('delete', item._id)"
-          />
         </div>
       </div>
 

@@ -32,6 +32,8 @@ import disasterCheckRoutes from "./routes/disasterCheck.js";
 // 每日問候
 import dailyGreetingRoutes from "./routes/dailyGreeting.js";
 
+import cloudinaryRoutes from "./routes/cloudinary.js";
+
 const PORT = process.env.PORT || 4000;
 
 // MongoDB 連線
@@ -84,6 +86,8 @@ app.use("/api/disaster", disasterCheckRoutes);
 
 // 每日問候
 app.use("/api/dailygreeting", dailyGreetingRoutes);
+
+app.use("/api/cloudinary", cloudinaryRoutes);
 
 // 處理所有未被定義的路由
 app.all(/.*/, (req, res) => {

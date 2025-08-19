@@ -15,9 +15,7 @@
               {{ isEditing ? '編輯貼文' : post?.title || '' }}
             </span>
             <v-spacer />
-
             <v-btn variant="tonal" prepend-icon="mdi-chevron-left" @click="goBack">返回列表</v-btn>
-
             <template v-if="isOwner">
               <v-btn
                 v-if="!isEditing"
@@ -27,7 +25,6 @@
                 @click="startEdit"
                 >編輯</v-btn
               >
-
               <v-btn
                 v-if="!isEditing"
                 class="ml-2"
@@ -49,7 +46,7 @@
             <div class="mb-3">{{ post?.content }}</div>
           </v-card-text>
 
-          <!-- 編輯模式 -->
+          <!-- ===== 編輯模式 ===== -->
           <v-card-text v-else>
             <v-row>
               <v-col cols="12">
@@ -70,6 +67,7 @@
                 />
               </v-col>
 
+              <!-- 自填 URL（選填） -->
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="form.image"
@@ -77,6 +75,36 @@
                   variant="outlined"
                   placeholder="https://…"
                 />
+              </v-col>
+
+              <!-- Cloudinary 簽名上傳（選填） -->
+              <v-col cols="12" md="6">
+                <v-file-input
+                  accept="image/*"
+                  label="更換圖片（選填）"
+                  variant="outlined"
+                  prepend-icon="mdi-image"
+                  :disabled="uploading"
+                  :multiple="false"
+                  @update:modelValue="onPickEdit"
+                />
+                <v-progress-linear
+                  v-if="uploading"
+                  :model-value="progress"
+                  height="6"
+                  class="mt-2"
+                />
+                <v-img
+                  v-if="form.image"
+                  :src="transform(form.image, 'w_800,q_auto,f_auto')"
+                  height="180"
+                  class="mt-2 rounded-lg"
+                  cover
+                />
+                <div class="d-flex ga-2 mt-2" v-if="form.image">
+                  <v-btn size="small" variant="text" @click="openInNew">新視窗檢視</v-btn>
+                  <v-btn size="small" variant="text" @click="removeImage">移除圖片</v-btn>
+                </div>
               </v-col>
 
               <v-col cols="12">
@@ -92,7 +120,9 @@
 
             <div class="d-flex justify-end ga-2">
               <v-btn variant="tonal" @click="cancelEdit">取消</v-btn>
-              <v-btn color="primary" :loading="saving" @click="saveEdit">儲存</v-btn>
+              <v-btn color="primary" :loading="saving" :disabled="uploading" @click="saveEdit"
+                >儲存</v-btn
+              >
             </div>
           </v-card-text>
         </v-card>
@@ -124,7 +154,9 @@ import { format } from 'date-fns'
 import { zhTW } from 'date-fns/locale'
 import { useUserStore } from '@/stores/user'
 import { toId } from '@/utils/id.js'
+import { useCloudinaryUploadSigned } from '@/composables/useCloudinaryUploadSigned'
 
+const { uploadImageSigned, transform } = useCloudinaryUploadSigned()
 const POST_CATEGORIES = ['鄰里閒聊', '推薦分享', '二手交換', '失物招領', '求助協尋', '其他']
 
 const route = useRoute()
@@ -150,7 +182,7 @@ const myId = computed(() => toId(userStore.user))
 const isOwner = computed(() => toId(post.value?.creator) === myId.value)
 
 const isEditing = ref(false)
-const form = ref({ title: '', category: '其他', image: '', content: '' })
+const form = ref({ title: '', category: '其他', image: '', imagePublicId: '', content: '' })
 
 const formatTime = (time) =>
   time ? format(new Date(time), 'yyyy-MM-dd HH:mm', { locale: zhTW }) : ''
@@ -180,12 +212,40 @@ function startEdit() {
     title: post.value.title || '',
     category: post.value.category || '其他',
     image: post.value.image || '',
+    imagePublicId: post.value.imagePublicId || '',
     content: post.value.content || '',
   }
 }
 
 function cancelEdit() {
   isEditing.value = false
+}
+
+function openInNew() {
+  if (form.value.image) window.open(form.value.image, '_blank')
+}
+function removeImage() {
+  form.value.image = ''
+  form.value.imagePublicId = ''
+}
+
+/** 編輯模式：簽名上傳圖片 */
+const uploading = ref(false)
+const progress = ref(0)
+async function onPickEdit(files) {
+  const file = (Array.isArray(files) && files[0]) || files?.[0] || files
+  if (!file) return
+  uploading.value = true
+  progress.value = 0
+  try {
+    const { secure_url, public_id } = await uploadImageSigned(file, (n) => (progress.value = n))
+    form.value.image = secure_url
+    form.value.imagePublicId = public_id
+  } catch (e) {
+    showToast(e?.message || '上傳失敗', 'error')
+  } finally {
+    uploading.value = false
+  }
 }
 
 async function saveEdit() {
@@ -195,8 +255,9 @@ async function saveEdit() {
     const payload = {
       title: form.value.title,
       content: form.value.content,
-      image: form.value.image,
       category: form.value.category,
+      image: form.value.image || '',
+      imagePublicId: form.value.imagePublicId || '',
     }
     const { data } = await api.put(`/posts/${postId.value}`, payload)
     post.value = data.post || post.value

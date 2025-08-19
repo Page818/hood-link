@@ -11,12 +11,7 @@
 
       <template v-else>
         <div v-for="c in comments" :key="c._id" class="mb-4">
-          <CommentItem
-            :item="c"
-            :currentUserId="myId"
-            @update="handleUpdate"
-            @delete="handleDelete"
-          />
+          <CommentItem :item="c" :currentUserId="myId" @update="handleUpdate" />
         </div>
         <div v-if="comments.length === 0" class="text-caption text-medium-emphasis">
           尚無留言，搶頭香吧！
@@ -130,16 +125,6 @@ async function handleUpdate({ id, content }) {
     if (i !== -1) comments.value[i] = updated
   } catch (e) {
     error.value = e?.response?.data?.message || '更新留言失敗'
-  }
-}
-
-async function handleDelete(id) {
-  try {
-    await api.delete(`/comments/${id}`)
-    comments.value = comments.value.filter((c) => c._id !== id)
-    emit('updated', comments.value.length)
-  } catch (e) {
-    error.value = e?.response?.data?.message || '刪除留言失敗'
   }
 }
 

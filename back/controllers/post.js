@@ -1,13 +1,15 @@
 // controllers/post.js
+import mongoose from "mongoose";
+import { StatusCodes } from "http-status-codes";
 import Post from "../models/post.js";
 import Community from "../models/community.js";
-import { StatusCodes } from "http-status-codes";
-import mongoose from "mongoose";
+import cloudinary from "../config/cloudinary.js"; // ← 注意相對路徑
 
 // 建立貼文
 export const createPost = async (req, res) => {
 	try {
-		const { title, content, image, category, communityId } = req.body;
+		const { title, content, image, imagePublicId, category, communityId } =
+			req.body;
 
 		if (!title || !content || !communityId) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
@@ -34,7 +36,8 @@ export const createPost = async (req, res) => {
 		const newPost = new Post({
 			title,
 			content,
-			image,
+			image: image || "",
+			imagePublicId: imagePublicId || "",
 			category,
 			community: communityId,
 			creator: req.user._id,
@@ -43,67 +46,92 @@ export const createPost = async (req, res) => {
 
 		await newPost.save();
 
-		res.status(StatusCodes.CREATED).json({
+		return res.status(StatusCodes.CREATED).json({
 			success: true,
 			message: "貼文已建立",
 			post: newPost,
 		});
 	} catch (err) {
 		console.error("❌ 建立貼文失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法建立貼文",
 		});
 	}
 };
 
-// 編輯貼文
+// 編輯貼文（含圖片更換/移除會刪舊圖）
 export const updatePost = async (req, res) => {
 	try {
 		const { postId } = req.params;
-		const { title, content, image, category } = req.body;
+		const { title, content, image, imagePublicId, category } = req.body;
 
 		if (!mongoose.Types.ObjectId.isValid(postId)) {
-			return res.status(400).json({ success: false, message: "無效的貼文 ID" });
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的貼文 ID" });
 		}
 
 		const post = await Post.findById(postId);
 		if (!post) {
-			return res.status(StatusCodes.NOT_FOUND).json({
-				success: false,
-				message: "找不到貼文",
-			});
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到貼文" });
 		}
 
-		if (post.creator.toString() !== req.user._id.toString()) {
+		// 僅作者可編輯
+		if (String(post.creator) !== String(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你沒有權限編輯這篇貼文",
 			});
 		}
 
-		if (title) post.title = title;
-		if (content) post.content = content;
+		// 判斷是否需要刪舊圖
+		const hadImage = Boolean(post.imagePublicId);
+		const wantRemoveImage = image === "" || imagePublicId === ""; // 明確清空
+		const wantReplaceImage =
+			image &&
+			imagePublicId &&
+			(image !== post.image || imagePublicId !== post.imagePublicId);
+
+		if ((wantRemoveImage || wantReplaceImage) && hadImage) {
+			try {
+				await cloudinary.uploader.destroy(post.imagePublicId, {
+					invalidate: true,
+				});
+			} catch (e) {
+				console.warn(
+					"⚠️ Cloudinary destroy 失敗（略過，不影響更新）:",
+					e?.message || e
+				);
+			}
+		}
+
+		// 套用更新欄位（允許清空字串）
+		if (title !== undefined) post.title = title;
+		if (content !== undefined) post.content = content;
+		if (category !== undefined) post.category = category;
 		if (image !== undefined) post.image = image;
-		if (category) post.category = category;
+		if (imagePublicId !== undefined) post.imagePublicId = imagePublicId;
 
 		await post.save();
 
-		res.status(StatusCodes.OK).json({
+		return res.status(StatusCodes.OK).json({
 			success: true,
 			message: "貼文已更新",
 			post,
 		});
 	} catch (err) {
 		console.error("❌ 更新貼文失敗", err);
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法更新貼文",
 		});
 	}
 };
 
-// 刪除貼文
+// 刪除貼文（含刪雲端圖片，作者或社區管理員可刪）
 export const deletePost = async (req, res) => {
 	try {
 		const { postId } = req.params;
@@ -115,24 +143,26 @@ export const deletePost = async (req, res) => {
 			});
 		}
 
-		const post = await Post.findById(postId).select("_id creator community");
+		const post = await Post.findById(postId).select(
+			"_id creator community imagePublicId"
+		);
 		if (!post) {
-			return res.status(StatusCodes.NOT_FOUND).json({
-				success: false,
-				message: "找不到貼文:(",
-			});
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到貼文:(" });
 		}
 
-		const isOwner = post.creator?.equals?.(req.user._id) === true;
+		const isOwner = String(post.creator) === String(req.user._id);
 
+		// 社區管理員也可刪
 		let isCommunityAdmin = false;
 		if (post.community) {
 			const community = await Community.findById(post.community).select(
 				"admins"
 			);
 			if (community?.admins?.length) {
-				isCommunityAdmin = community.admins.some((id) =>
-					id.equals(req.user._id)
+				isCommunityAdmin = community.admins.some(
+					(id) => String(id) === String(req.user._id)
 				);
 			}
 		}
@@ -142,6 +172,20 @@ export const deletePost = async (req, res) => {
 				success: false,
 				message: "你沒有權限刪除這篇貼文",
 			});
+		}
+
+		// 先刪雲端圖片（若有）
+		if (post.imagePublicId) {
+			try {
+				await cloudinary.uploader.destroy(post.imagePublicId, {
+					invalidate: true,
+				});
+			} catch (e) {
+				console.warn(
+					"⚠️ Cloudinary destroy 失敗（略過，不影響刪文）:",
+					e?.message || e
+				);
+			}
 		}
 
 		await post.deleteOne();
@@ -169,22 +213,22 @@ export const getPostById = async (req, res) => {
 				message: "無效的貼文ID",
 			});
 		}
+
 		const post = await Post.findById(postId)
 			.populate("creator", "name email")
 			.populate("community", "name");
 
 		if (!post) {
-			return res.status(StatusCodes.NOT_FOUND).json({
-				success: false,
-				message: "找不到貼文",
-			});
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到貼文" });
 		}
 
+		// 權限：使用者需屬於貼文社區
 		const postCommunityId = post.community?._id
 			? String(post.community._id)
 			: String(post.community);
 		const userCommunities = (req.user.community || []).map(String);
-
 		if (!userCommunities.includes(postCommunityId)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
@@ -192,10 +236,7 @@ export const getPostById = async (req, res) => {
 			});
 		}
 
-		return res.status(StatusCodes.OK).json({
-			success: true,
-			post,
-		});
+		return res.status(StatusCodes.OK).json({ success: true, post });
 	} catch (err) {
 		console.error("❌ 取得單一貼文失敗", err);
 		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -218,6 +259,7 @@ export const getPostsByCommunity = async (req, res) => {
 			});
 		}
 
+		// 權限：需屬於該社區
 		const userCommunities = (req.user.community || []).map(String);
 		if (!userCommunities.includes(String(communityId))) {
 			return res.status(StatusCodes.FORBIDDEN).json({
@@ -227,9 +269,7 @@ export const getPostsByCommunity = async (req, res) => {
 		}
 
 		const q = { community: communityId };
-		if (category && category !== "全部") {
-			q.category = category;
-		}
+		if (category && category !== "全部") q.category = category;
 
 		const pageNum = Math.max(1, Number(page) || 1);
 		const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
