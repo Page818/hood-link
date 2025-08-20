@@ -1,0 +1,194 @@
+/* ---------- 色彩變數（可在此微調整體氛圍） ---------- */
+:root {
+  --c-cream: #fff7ec;
+  --c-coral: #ff7a59;
+  --c-teal: #00a6a6;
+  --c-sky: #eaf5ff;
+  --c-ink: #1f2937;
+  --c-gray: #6b7280;
+
+  --shadow-1: 0 6px 16px rgba(31, 41, 55, 0.08);
+  --shadow-2: 0 10px 24px rgba(31, 41, 55, 0.12);
+}
+
+/* ---------- 通用外觀工具 ---------- */
+.round-xl {
+  border-radius: 24px !important;
+}
+.round-2xl {
+  border-radius: 28px !important;
+}
+.soft-shadow {
+  box-shadow: var(--shadow-1) !important;
+}
+.soft-shadow-lg {
+  box-shadow: var(--shadow-2) !important;
+}
+
+.card-bleed {
+  background: var(--c-sky) !important;
+}
+.card-cream {
+  background: var(--c-cream) !important;
+}
+
+/* 輕微上浮互動 */
+.wiggle {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
+}
+.wiggle:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+/* 主要 CTA 突出（搭配 v-btn 使用時也可額外加） */
+.cta {
+  background: var(--c-coral) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+}
+
+/* 次要 CTA（清爽） */
+.cta-tonal {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: var(--c-ink) !important;
+  border-radius: 999px !important;
+}
+
+/* ---------- 分隔裝飾：波浪 / 圓弧 / 鋸齒 ---------- */
+/* 波浪分隔條（放在 section 中間）：<div class="wave-divider"></div> */
+.wave-divider {
+  position: relative;
+  height: 24px;
+  background: transparent;
+}
+.wave-divider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(12px 12px at 12px 12px, var(--c-cream) 12px, transparent 13px)
+    repeat-x;
+  background-size: 24px 24px;
+  top: -12px;
+}
+
+/* 圓弧（雲朵感） */
+.cloud-divider {
+  position: relative;
+  height: 28px;
+  background: transparent;
+  overflow: hidden;
+}
+.cloud-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: 36px;
+  background: radial-gradient(18px 18px at 18px 18px, var(--c-cream) 18px, transparent 19px)
+    repeat-x;
+  background-size: 36px 36px;
+}
+
+/* 鋸齒（party 旗感）：<div class="zigzag"></div> */
+.zigzag {
+  height: 10px;
+  background:
+    linear-gradient(-45deg, transparent 75%, var(--c-cream) 75%) 0 0/20px 20px,
+    linear-gradient(45deg, transparent 75%, var(--c-cream) 75%) 10px 0/20px 20px;
+}
+
+/* ---------- 旗串裝飾（簡易 CSS 版本） ---------- */
+/* 用法：
+<div class="bunting">
+  <span></span><span></span><span></span>...
+</div>
+*/
+.bunting {
+  position: relative;
+  height: 46px;
+  margin: 12px 0 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.bunting::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 4%;
+  right: 4%;
+  border-top: 3px solid var(--c-coral);
+  transform: rotate(-1deg);
+}
+.bunting > span {
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 18px solid;
+  transform: translateY(14px) rotate(2deg);
+}
+.bunting > span:nth-child(4n + 1) {
+  border-top-color: var(--c-coral);
+}
+.bunting > span:nth-child(4n + 2) {
+  border-top-color: var(--c-teal);
+}
+.bunting > span:nth-child(4n + 3) {
+  border-top-color: #7cc4ff;
+}
+.bunting > span:nth-child(4n + 4) {
+  border-top-color: #ffc857;
+}
+
+/* ---------- 空狀態/錯誤狀態（友善文案） ---------- */
+.empty-state {
+  background: linear-gradient(180deg, rgba(255, 247, 236, 0.6), rgba(255, 255, 255, 1));
+  border: 1px dashed rgba(0, 0, 0, 0.08);
+  color: var(--c-gray);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+}
+.empty-state .emoji {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.error-state {
+  background: #fff;
+  border: 1px solid rgba(215, 38, 61, 0.15);
+  color: #9b2131;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* ---------- 版面細節 ---------- */
+.section-title {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--c-ink);
+}
+.subtitle-dim {
+  color: var(--c-gray);
+}
+
+/* 卡片內小貼紙（如：已置頂） */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff3;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-1);
+  font-size: 12px;
+}

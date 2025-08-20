@@ -14,6 +14,8 @@ import PostCreateView from '@/views/PostCreateView.vue'
 import ReportCreateView from '@/views/reports/ReportCreateView.vue'
 import ReportDetailView from '@/views/reports/ReportDetailView.vue'
 import MeView from '@/views/me/MeView.vue'
+import AdminCommunityDashboard from '@/views/admin/AdminCommunityDashboard.vue'
+import AdminAnnouncement from '@/views/admin/AdminAnnouncement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -114,6 +116,22 @@ const router = createRouter({
       path: '/me',
       name: 'me',
       component: MeView,
+      props: true,
+      meta: { layout: 'default' },
+    },
+
+    // ===== 管理員頁面 =====
+    {
+      path: '/admin/community/:communityId',
+      name: 'admin.community.dashboard',
+      component: AdminCommunityDashboard,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    {
+      path: '/admin/community/:communityId/announcement',
+      name: 'admin.community.announcement',
+      component: AdminAnnouncement,
       props: true,
       meta: { layout: 'default' },
     },
