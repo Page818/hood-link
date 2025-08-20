@@ -278,7 +278,7 @@ const profileForm = ref(null)
 
 const ROUTES = {
   post: 'post.detail',
-  report: 'report.detail',
+  report: 'reports.detail',
   lobby: 'community.dashboard',
 }
 

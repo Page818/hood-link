@@ -12,6 +12,7 @@ import PostListView from '@/views/PostListView.vue'
 import PostDetailView from '@/views/PostDetailView.vue'
 import PostCreateView from '@/views/PostCreateView.vue'
 import ReportCreateView from '@/views/reports/ReportCreateView.vue'
+import ReportDetailView from '@/views/reports/ReportDetailView.vue'
 import MeView from '@/views/me/MeView.vue'
 
 const router = createRouter({
@@ -100,6 +101,14 @@ const router = createRouter({
       props: true,
       meta: { layout: 'default' },
     },
+    {
+      path: '/community/:communityId/reports/:reportId',
+      name: 'reports.detail',
+      component: ReportDetailView,
+      props: true,
+      meta: { layout: 'default' },
+    },
+
     // 個人頁面
     {
       path: '/me',
