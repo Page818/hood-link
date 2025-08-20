@@ -9,9 +9,10 @@ import {
 	register,
 	login,
 	getCurrentUser,
-	updateProfile,
-	getMyPosts, // 新增
-	getMyReports, // 新增
+	updateProfile, // 舊：PATCH /users/update（保留相容）
+	updateCurrentUser, // 新：PATCH /users/me（建議使用）
+	getMyPosts,
+	getMyReports,
 } from "../controllers/user.js";
 
 const router = express.Router();
@@ -20,6 +21,11 @@ const router = express.Router();
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.get("/me", auth, getCurrentUser);
+
+// ✅ 新增語義化更新路由（建議前端改用這條）
+router.patch("/me", auth, validateProfileUpdate, updateCurrentUser);
+
+// 仍保留舊路由，避免前端尚未改動造成斷線
 router.patch("/update", auth, validateProfileUpdate, updateProfile);
 
 // 我的清單

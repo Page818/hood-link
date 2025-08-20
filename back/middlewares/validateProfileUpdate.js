@@ -15,5 +15,10 @@ export const validateProfileUpdate = (req, res, next) => {
 		});
 	}
 
+	console.log(
+		"✅ validateProfileUpdate PASS payload =",
+		JSON.stringify(req.body)
+	);
+
 	next();
 };
