@@ -28,10 +28,10 @@
           <span>報名截止：{{ formatDate(event.registrationDeadline, true) }}</span>
         </div>
 
-        <div class="d-flex align-start mb-1">
+        <!-- <div class="d-flex align-start mb-1">
           <v-icon class="mr-2">mdi-map-marker</v-icon>
           <span>{{ event.location || '（地點未填寫）' }}</span>
-        </div>
+        </div> -->
 
         <div class="d-flex align-center">
           <v-icon class="mr-2">mdi-account-group</v-icon>

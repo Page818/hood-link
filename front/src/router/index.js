@@ -16,6 +16,9 @@ import ReportDetailView from '@/views/reports/ReportDetailView.vue'
 import MeView from '@/views/me/MeView.vue'
 import AdminCommunityDashboard from '@/views/admin/AdminCommunityDashboard.vue'
 import AdminAnnouncement from '@/views/admin/AdminAnnouncement.vue'
+import AdminEvent from '@/views/admin/AdminEvent.vue'
+import AdminReport from '@/views/admin/AdminReport.vue'
+import AdminReportDetail from '@/views/admin/AdminReportDetail.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -135,6 +138,28 @@ const router = createRouter({
       props: true,
       meta: { layout: 'default' },
     },
+    {
+      path: '/admin/community/:communityId/event',
+      name: 'admin.community.event',
+      component: AdminEvent,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    {
+      path: '/admin/community/:communityId/report',
+      name: 'admin.community.report',
+      component: AdminReport,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    {
+      path: '/admin/community/:communityId/report/:reportId',
+      name: 'admin.community.report.detail',
+      component: AdminReportDetail,
+      props: true,
+      meta: { layout: 'default' },
+    },
+
     // （可選）404
     // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue'), meta: { layout: 'default' } },
   ],

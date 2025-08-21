@@ -58,6 +58,12 @@
   border-radius: 999px !important;
 }
 
+/* 確保 CTA 文字清晰可見 */
+.v-btn.cta {
+  color: #fff !important; /* 白字 */
+  font-weight: 600;
+}
+
 /* ---------- 分隔裝飾：波浪 / 圓弧 / 鋸齒 ---------- */
 /* 波浪分隔條（放在 section 中間）：<div class="wave-divider"></div> */
 .wave-divider {
@@ -191,4 +197,166 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: var(--shadow-1);
   font-size: 12px;
+}
+
+/* --------- FlowFest Focus 樣式 --------- */
+
+/* Text Field / Textarea 聚焦 */
+.v-field.v-field--focused {
+  border: 2px solid var(--c-coral) !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important; /* Coral 外光暈 */
+  background-color: #fffdf8 !important; /* 奶油底更明顯 */
+}
+
+/* Checkbox 聚焦狀態（邊框 + 勾選） */
+.v-selection-control.v-selection-control--focused {
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important;
+}
+
+.v-selection-control.v-selection-control--focused .v-icon {
+  color: var(--c-coral) !important;
+}
+
+/* Checkbox 被勾選時也用 Coral */
+.v-selection-control .v-selection-control__input .v-icon {
+  color: var(--c-coral) !important;
+}
+
+.v-field:hover {
+  background-color: #fffaf3 !important;
+}
+/* =========================================================
+   FlowFest x Vuetify：更精準的 Focus/Active 樣式
+   ========================================================= */
+
+/* 文字輸入類（v-text-field / v-textarea / v-file-input） */
+.v-field {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* solo/filled 變體：用 overlay 控制底色 */
+.v-field--variant-solo .v-field__overlay,
+.v-field--variant-filled .v-field__overlay {
+  background-color: #fffaf3 !important; /* hover/預設的淡奶油 */
+}
+.v-field.v-field--focused .v-field__overlay {
+  background-color: #fffdf8 !important; /* 聚焦更亮一點的奶油 */
+}
+
+/* outlined 變體：把 outline 直接染成 Coral，並加柔光暈 */
+.v-field.v-field--focused .v-field__outline__start,
+.v-field.v-field--focused .v-field__outline__end,
+.v-field.v-field--focused .v-field__outline__notch {
+  border-color: var(--c-coral) !important;
+}
+.v-field.v-field--focused {
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important; /* Coral 外光暈 */
+}
+
+/* hover 也給點奶油感（含各變體） */
+.v-field:hover .v-field__overlay {
+  background-color: #fff7ef !important;
+}
+
+/* label 聚焦/啟用顏色（label 在 notch 上） */
+.v-field.v-field--focused .v-label,
+.v-field.v-field--active .v-label {
+  color: var(--c-coral) !important;
+}
+
+/* Checkbox / Switch：聚焦「外光暈」 + 勾選/滑桿用 Coral */
+.v-selection-control.v-selection-control--focused {
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important;
+}
+.v-selection-control .v-selection-control__input .v-icon {
+  color: var(--c-coral) !important; /* 勾選色 */
+}
+/* 針對已勾選狀態（dirty）再保險一次 */
+.v-selection-control.v-selection-control--dirty .v-icon {
+  color: var(--c-coral) !important;
+}
+
+/* File input 的小圖示也跟著 Coral */
+.v-input.v-file-input .v-field__prepend-inner .v-icon {
+  color: var(--c-coral) !important;
+}
+
+/* 主要 CTA（已在你檔案中，但再加強禁用/載入狀態） */
+.v-btn.cta {
+  color: #fff !important;
+  font-weight: 600;
+}
+/* 禁用時也維持白字（避免被 Vuetify 覆蓋成半透明深色） */
+.v-btn.cta.v-btn--disabled .v-btn__content {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+/* 載入中 spinner 顏色 */
+.v-btn.cta .v-progress-circular {
+  color: #fff !important;
+}
+
+/* 外框滿版海報感 */
+.app-frame {
+  position: fixed;
+  width: 100%;
+  min-height: 100vh;
+  inset: 12px;
+  border: 6px solid var(--c-ink);
+  border-radius: 16px;
+  background: var(--c-cream);
+  overflow: clip; /* 避免內部陰影超出 */
+}
+
+/* 手機可以窄一點的外框邊距 */
+@media (max-width: 600px) {
+  .app-frame {
+    margin: 6px;
+    border-width: 4px;
+    border-radius: 12px;
+  }
+}
+
+/* 粉色膠囊按鈕（FlowFest Buy Tickets 感） */
+.btn-bubble-pink {
+  --pink: #f8a8c1; /* 可微調 */
+  background: var(--pink) !important;
+  color: #111 !important; /* 黑字 */
+  border: 2px solid #111 !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px;
+  box-shadow:
+    0 4px 0 #111,
+    0 8px 16px rgba(0, 0, 0, 0.08) !important; /* 貼紙陰影 */
+  transform: translateY(0);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.btn-bubble-pink:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 0 #111,
+    0 12px 20px rgba(0, 0, 0, 0.12) !important;
+  filter: brightness(1.02);
+}
+.btn-bubble-pink:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 0 #111,
+    0 6px 12px rgba(0, 0, 0, 0.1) !important;
+}
+html,
+body,
+#app {
+  height: 100%;
+}
+body {
+  background: var(--c-cream);
 }
