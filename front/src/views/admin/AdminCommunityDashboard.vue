@@ -95,7 +95,7 @@ const cards = [
     value: 'members',
     icon: 'mdi-account-group-outline',
     desc: '住戶與管理員權限設定。',
-    to: { name: 'admin-members', params: { communityId } },
+    to: { name: 'admin.community.members', params: { communityId } },
   },
   {
     title: '安否回報',

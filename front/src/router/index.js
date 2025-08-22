@@ -19,6 +19,7 @@ import AdminAnnouncement from '@/views/admin/AdminAnnouncement.vue'
 import AdminEvent from '@/views/admin/AdminEvent.vue'
 import AdminReport from '@/views/admin/AdminReport.vue'
 import AdminReportDetail from '@/views/admin/AdminReportDetail.vue'
+import AdminMembers from '@/views/admin/AdminMembers.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -156,6 +157,13 @@ const router = createRouter({
       path: '/admin/community/:communityId/report/:reportId',
       name: 'admin.community.report.detail',
       component: AdminReportDetail,
+      props: true,
+      meta: { layout: 'default' },
+    },
+    {
+      path: '/admin/community/:communityId/members',
+      name: 'admin.community.members',
+      component: AdminMembers,
       props: true,
       meta: { layout: 'default' },
     },

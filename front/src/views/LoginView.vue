@@ -1,46 +1,56 @@
+<!-- src/views/LoginView.vue -->
 <template>
-  <!-- 保持既有模板，重點是：container 用 login-root；欄位加 poster-input；卡片奶油色 -->
-  <v-container fluid class="login-root d-flex align-center justify-center">
-    <v-card class="login-card round-xl soft-shadow pa-6 pa-sm-8" elevation="0">
-      <!-- <v-card-title class="text-h6 text-center pb-2">登入《好鄰聚》</v-card-title> -->
-      <v-card-text class="pt-0">
-        <v-form @submit.prevent="handleLogin">
-          <v-text-field
-            v-model="form.account"
-            label="手機號碼或 Email"
-            :rules="[rules.required]"
-            prepend-inner-icon="mdi-account"
-            density="comfortable"
-            hide-details="auto"
-            class="mb-3 round-xl poster-input"
-            variant="solo-filled"
-            autocomplete="username"
-          />
-          <v-text-field
-            v-model="form.password"
-            :type="showPwd ? 'text' : 'password'"
-            label="密碼"
-            :rules="[rules.required]"
-            prepend-inner-icon="mdi-lock"
-            :append-inner-icon="showPwd ? 'mdi-eye-off' : 'mdi-eye'"
-            @click:append-inner="showPwd = !showPwd"
-            density="comfortable"
-            hide-details="auto"
-            class="mb-4 round-xl poster-input"
-            autocomplete="current-password"
-            variant="solo-filled"
-          />
-          <v-btn type="submit" size="large" class="btn-bubble-pink" block :loading="loading">
-            登入
-          </v-btn>
-        </v-form>
+  <!-- heroTop 可拉近/拉遠大標；sideWidth 控兩側粒子區寬度 -->
+  <AuthLayout heroTop="12%" sideWidth="50vw">
+    <!-- 卡片外的大標 -->
+    <template #hero>
+      <div class="hero-wrap">
+        <span class="hero-emoji">🏘️</span>
+        <span class="hero-text brand-title">好鄰聚</span>
+      </div>
+    </template>
+
+    <!-- 卡片（純奶油底 + 黑框陰影） -->
+    <v-card class="login-card round-xl" elevation="0">
+      <div class="text-center text-h6 font-weight-bold mb-4">登入</div>
+
+      <v-form @submit.prevent="handleLogin">
+        <v-text-field
+          v-model="form.account"
+          label="手機號碼或 Email"
+          :rules="[rules.required]"
+          prepend-inner-icon="mdi-account"
+          density="comfortable"
+          hide-details="auto"
+          class="mb-3 round-xl poster-input"
+          autocomplete="username"
+          variant="solo-filled"
+        />
+        <v-text-field
+          v-model="form.password"
+          :type="showPwd ? 'text' : 'password'"
+          label="密碼"
+          :rules="[rules.required]"
+          prepend-inner-icon="mdi-lock"
+          :append-inner-icon="showPwd ? 'mdi-eye-off' : 'mdi-eye'"
+          @click:append-inner="showPwd = !showPwd"
+          density="comfortable"
+          hide-details="auto"
+          class="mb-4 round-xl poster-input"
+          autocomplete="current-password"
+          variant="solo-filled"
+        />
+
+        <v-btn type="submit" size="large" class="btn-bubble-pink" block :loading="loading">
+          登入
+        </v-btn>
 
         <div class="text-caption mt-6 text-center">
           尚未註冊？<router-link to="/register">前往註冊</router-link>
         </div>
-      </v-card-text>
+      </v-form>
     </v-card>
-  </v-container>
+  </AuthLayout>
 </template>
 
 <script setup>
@@ -48,6 +58,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/services/api.js'
+import AuthLayout from '@/layouts/AuthLayout.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -56,21 +67,20 @@ const form = reactive({ account: '', password: '' })
 const loading = ref(false)
 const showPwd = ref(false)
 
-const rules = {
-  required: (v) => !!v || '此欄位為必填',
-}
+const rules = { required: (v) => !!v || '此欄位為必填' }
 
 const handleLogin = async () => {
   if (!form.account || !form.password) return
   loading.value = true
   try {
-    const res = await api.post('/users/login', {
+    const { data } = await api.post('/users/login', {
       account: form.account.trim(),
       password: form.password.trim(),
     })
-    const { token } = res.data
+    const token = data.token
     userStore.token = token
     localStorage.setItem('token', token)
+    api.defaults.headers.common.Authorization = `Bearer ${token}`
 
     const meRes = await api.get('/users/me')
     const fullUser = meRes.data.user
@@ -80,9 +90,8 @@ const handleLogin = async () => {
     const hasCommunity = Array.isArray(fullUser.community) && fullUser.community.length > 0
     router.push(hasCommunity ? '/dashboard' : '/community/join')
   } catch (err) {
-    console.error('❌ 登入失敗', err)
-    const msg = err?.response?.data?.message || '登入失敗，請檢查帳號密碼'
-    alert(msg)
+    if (import.meta.env.DEV) console.error('❌ 登入失敗', err)
+    alert(err?.response?.data?.message || '登入失敗，請檢查帳號密碼')
   } finally {
     loading.value = false
   }
@@ -90,55 +99,79 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* .login-root {
-  overflow: hidden;
-  background: var(--c-cream);
-  padding: 0;
-  display: grid;
-  place-items: center;
-} */
-
-/* .login-card {
-  width: clamp(320px, 90vw, 460px);
-  background: var(--c-cream) !important;
-  border: none !important;
-  max-height: none;
-} */
-/* ====== Login page container ====== */
-.login-root {
-  height: 100%; /* 配合 .app-frame: fixed + inset */
-  overflow: hidden; /* 整頁不捲動 */
-  background: var(--c-cream); /* 純奶油 */
-  padding: 0;
-  display: grid;
-  place-items: center;
+/* ==== HERO 外觀（卡片外大標） ==== */
+.hero-wrap {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 10px;
+}
+.brand-title {
+  font-family:
+    'HoodBrandTitle', 'Taipei Sans TC', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei',
+    sans-serif;
+}
+.hero-text {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #111;
+  line-height: 1;
+  font-size: clamp(36px, 6vw, 64px);
+}
+.hero-emoji {
+  font-size: 1.8em;
+}
+@media (min-width: 1280px) {
+  .hero-text {
+    font-size: clamp(48px, 5vw, 96px);
+  }
+  .hero-emoji {
+    font-size: 2.2em;
+  }
+}
+@media (min-width: 1920px) {
+  .hero-text {
+    font-size: clamp(64px, 4vw, 128px);
+  }
+  .hero-emoji {
+    font-size: 2.6em;
+  }
 }
 
-/* ====== Card ====== */
+/* 視窗較矮時字與位置自適應（高度靠 AuthLayout 的 heroTop 控） */
+@media (max-height: 700px) {
+  .hero-text {
+    font-size: clamp(28px, 5vw, 48px);
+  }
+  .hero-emoji {
+    font-size: 1.4em;
+  }
+}
+
+/* ==== 卡片（奶油底 + 黑框陰影海報感） ==== */
 .login-card {
-  width: clamp(320px, 90vw, 460px);
-  background: var(--c-cream) !important; /* 與背景同色，避免雙框 */
-  border: none !important;
-  max-height: none; /* 兩欄位不需滾動 */
+  width: clamp(320px, 86vw, 520px);
+  background: var(--c-cream) !important;
+  border: 2px solid #111 !important;
+  box-shadow:
+    0 4px 0 #111,
+    0 8px 16px rgba(0, 0, 0, 0.08) !important;
+  padding: clamp(16px, 3.2vw, 28px);
 }
 
-/* ====== Poster-style inputs（for variant="solo-filled"） ====== */
+/* ==== 黑框奶油底輸入（海報感） ==== */
 .poster-input :deep(.v-field) {
-  border: 2px solid #111 !important; /* 黑框 */
+  border: 2px solid #111 !important;
   border-radius: 14px !important;
-  background: var(--c-cream) !important; /* 奶油底 */
-  box-shadow: 0 2px 0 rgba(17, 17, 17, 0.08) !important; /* 微貼紙感 */
+  background: var(--c-cream) !important;
+  box-shadow: 0 2px 0 rgba(17, 17, 17, 0.08) !important;
 }
-
-/* 移除 filled/solo 的 overlay/outline 影響，維持我們的黑框與底色 */
 .poster-input :deep(.v-field__outline) {
   display: none !important;
 }
 .poster-input :deep(.v-field__overlay) {
   background: var(--c-cream) !important;
 }
-
-/* Label / Icon 黑色 */
 .poster-input :deep(.v-label) {
   color: #111 !important;
   opacity: 0.8;
@@ -148,15 +181,11 @@ const handleLogin = async () => {
 .poster-input :deep(.v-field__append-inner .v-icon) {
   color: #111 !important;
 }
-
-/* Focus：柔和外光暈 */
 .poster-input :deep(.v-field.v-field--focused) {
   box-shadow:
     0 0 0 3px rgba(17, 17, 17, 0.12),
     0 2px 0 rgba(17, 17, 17, 0.12) !important;
 }
-
-/* Hover：奶油底微亮 */
 .poster-input :deep(.v-field:hover) .v-field__overlay {
   background: #fff5e8 !important;
 }

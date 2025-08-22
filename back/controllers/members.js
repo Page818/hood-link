@@ -1,0 +1,228 @@
+// controllers/members.js
+import mongoose from "mongoose";
+import { StatusCodes } from "http-status-codes";
+import Community from "../models/community.js";
+import User from "../models/user.js";
+
+const sameId = (a, b) => String(a) === String(b);
+const isOid = (v) => mongoose.isValidObjectId(v);
+
+const ensureAdmin = (community, userId) => {
+	if (!community?.admins?.some((a) => sameId(a, userId))) {
+		const err = new Error("你不是此社區管理員，無操作權限");
+		err.status = StatusCodes.FORBIDDEN;
+		throw err;
+	}
+};
+
+/** 取得成員/管理員列表（僅管理員） */
+export const listMembers = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		if (!isOid(communityId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的社區 ID" });
+		}
+
+		const community = await Community.findById(communityId)
+			.populate("admins", "name email phone")
+			.populate("members", "name email phone");
+
+		if (!community) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到社區" });
+		}
+		ensureAdmin(community, req.user._id);
+
+		res.status(StatusCodes.OK).json({
+			success: true,
+			admins: community.admins || [],
+			members: community.members || [],
+			count: {
+				admins: community.admins?.length || 0,
+				members: community.members?.length || 0,
+			},
+		});
+	} catch (err) {
+		res
+			.status(err.status || 500)
+			.json({ success: false, message: err.message || "取得成員失敗" });
+	}
+};
+
+/** 加入成員（僅管理員） */
+export const addMember = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		const { userId } = req.body;
+
+		if (!isOid(communityId) || !isOid(userId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的參數" });
+		}
+
+		const [community, user] = await Promise.all([
+			Community.findById(communityId),
+			User.findById(userId),
+		]);
+
+		if (!community || !user) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到社區或使用者" });
+		}
+		ensureAdmin(community, req.user._id);
+
+		// 社區端：避免重複，使用 $addToSet
+		await Community.updateOne(
+			{ _id: communityId },
+			{ $addToSet: { members: user._id } }
+		);
+
+		// 使用者端：也加上此社區
+		await User.updateOne(
+			{ _id: user._id },
+			{ $addToSet: { community: community._id } }
+		);
+
+		res.status(StatusCodes.OK).json({ success: true, message: "已加入成員" });
+	} catch (err) {
+		res
+			.status(err.status || 500)
+			.json({ success: false, message: err.message || "加入成員失敗" });
+	}
+};
+
+/** 移除成員（僅管理員） */
+export const removeMember = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		const { userId } = req.body;
+
+		if (!isOid(communityId) || !isOid(userId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的參數" });
+		}
+
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到社區" });
+		}
+		ensureAdmin(community, req.user._id);
+
+		// 不可移除仍是管理員的成員，請先降權
+		if (community.admins.some((a) => sameId(a, userId))) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({
+					success: false,
+					message: "該使用者為管理員，請先取消管理員身分再移除成員",
+				});
+		}
+
+		await Community.updateOne(
+			{ _id: communityId },
+			{ $pull: { members: userId } }
+		);
+
+		await User.updateOne(
+			{ _id: userId },
+			{ $pull: { community: communityId } }
+		);
+
+		res.status(StatusCodes.OK).json({ success: true, message: "已移除成員" });
+	} catch (err) {
+		res
+			.status(err.status || 500)
+			.json({ success: false, message: err.message || "移除成員失敗" });
+	}
+};
+
+/** 指派管理員（僅管理員） */
+export const addAdmin = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		const { userId } = req.body;
+
+		if (!isOid(communityId) || !isOid(userId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的參數" });
+		}
+
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到社區" });
+		}
+		ensureAdmin(community, req.user._id);
+
+		// 指派管理員前，確保他是成員
+		await Community.updateOne(
+			{ _id: communityId },
+			{ $addToSet: { members: userId, admins: userId } }
+		);
+
+		// 使用者端也確保加入了社區
+		await User.updateOne(
+			{ _id: userId },
+			{ $addToSet: { community: communityId } }
+		);
+
+		res.status(StatusCodes.OK).json({ success: true, message: "已指派管理員" });
+	} catch (err) {
+		res
+			.status(err.status || 500)
+			.json({ success: false, message: err.message || "指派管理員失敗" });
+	}
+};
+
+/** 取消管理員（僅管理員） */
+export const removeAdmin = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		const { userId } = req.body;
+
+		if (!isOid(communityId) || !isOid(userId)) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "無效的參數" });
+		}
+
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res
+				.status(StatusCodes.NOT_FOUND)
+				.json({ success: false, message: "找不到社區" });
+		}
+		ensureAdmin(community, req.user._id);
+
+		// 不可把「最後一位管理員」移除
+		if (
+			(community.admins?.length || 0) <= 1 &&
+			community.admins.some((a) => sameId(a, userId))
+		) {
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json({ success: false, message: "至少需要保留一位管理員" });
+		}
+
+		await Community.updateOne(
+			{ _id: communityId },
+			{ $pull: { admins: userId } }
+		);
+
+		res.status(StatusCodes.OK).json({ success: true, message: "已取消管理員" });
+	} catch (err) {
+		res
+			.status(err.status || 500)
+			.json({ success: false, message: err.message || "取消管理員失敗" });
+	}
+};

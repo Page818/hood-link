@@ -3,36 +3,40 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  /** 內容卡片最大寬（px / 任意長度） */
-  maxWidth: { type: [Number, String], default: 480 },
-  /** 標題與副標題（也可用具名 slot 覆蓋） */
-  title: { type: String, default: '登入《好鄰聚》' },
-  subtitle: { type: String, default: '' },
-  /** 笑臉粒子區寬度（建議 18~28vw） */
+  /** 左右粒子區寬度（建議 18~28vw） */
   sideWidth: { type: String, default: '22vw' },
+  /** 大標( hero )距離頂端的位置（例如 '12%'、'80px'） */
+  heroTop: { type: String, default: '12%' },
+  /** 可開關粒子（行動裝置或特定頁面可關） */
+  showParticles: { type: Boolean, default: true },
 })
 
-/* 粒子參數：笑臉字元（不需載圖），輕微飄浮 */
+/* 必須：載入 tsParticles full，否則 char 形狀不會顯示 */
+const particlesInit = async (engine) => {
+  const { loadFull } = await import('tsparticles')
+  await loadFull(engine)
+}
+
+/* 粒子參數：笑臉字元、輕微飄浮 */
 const particleOptions = computed(() => ({
   background: { color: 'transparent' },
   detectRetina: true,
   fpsLimit: 60,
-  fullScreen: { enable: false }, // 由容器控制尺寸
+  fullScreen: { enable: false },
   particles: {
-    number: { value: 0 }, // 用 density+emitters 控制數量
+    number: { value: 0 },
     move: { enable: true, speed: 0.6, direction: 'none', outModes: { default: 'out' } },
     opacity: { value: 0.9 },
     size: { value: 18, random: { enable: true, minimumValue: 10 } },
     shape: {
       type: 'char',
       character: {
-        value: ['☺', '🙂', '😊'], // 笑臉
+        value: ['☺', '🙂', '😊'],
         font: 'Inter, Noto Sans TC, sans-serif',
-        style: '',
         weight: '700',
       },
     },
-    color: { value: '#1F2937' }, // 深色笑臉
+    color: { value: '#1F2937' },
   },
   emitters: [
     {
@@ -41,96 +45,61 @@ const particleOptions = computed(() => ({
       size: { width: 100, height: 0 },
     },
   ],
-  interactivity: {
-    events: { onHover: { enable: false }, resize: true },
-  },
+  interactivity: { events: { onHover: { enable: false }, resize: true } },
 }))
 </script>
 
 <template>
-  <!-- 以視窗高度為上限；整頁不捲動 -->
+  <!-- 整頁尺寸與置中；不設定背景、不設定卡片樣式 -->
   <v-container fluid class="auth-root">
-    <!-- 左側粒子區 -->
-    <div class="particles-side left" :style="{ width: sideWidth }">
-      <Particles id="left-smiles" :options="particleOptions" />
+    <!-- 左右粒子背景（不可互動） -->
+    <template v-if="showParticles">
+      <div class="particles-side left" :style="{ width: sideWidth }">
+        <Particles id="left-smiles" :init="particlesInit" :options="particleOptions" />
+      </div>
+      <div class="particles-side right" :style="{ width: sideWidth }">
+        <Particles id="right-smiles" :init="particlesInit" :options="particleOptions" />
+      </div>
+    </template>
+
+    <!-- 外層 HERO（卡片外的大標） -->
+    <div class="hero" :style="{ top: heroTop }" aria-label="brand">
+      <slot name="hero" />
     </div>
 
-    <!-- 右側粒子區 -->
-    <div class="particles-side right" :style="{ width: sideWidth }">
-      <Particles id="right-smiles" :options="particleOptions" />
-    </div>
-
-    <!-- 中央卡片：海報感 -->
-    <div class="auth-center">
-      <v-card class="auth-card poster round-xl soft-shadow">
-        <!-- 可愛旗串 -->
-        <div class="bunting" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-
-        <!-- 標題區（slot 可覆蓋） -->
-        <div class="text-center px-6 pt-4">
-          <slot name="logo">
-            <div class="brand text-h6">🏘️ <strong>好鄰聚</strong></div>
-          </slot>
-          <slot name="title"
-            ><div class="section-title mt-2">{{ title }}</div></slot
-          >
-          <slot name="subtitle" v-if="subtitle">
-            <div class="subtitle-dim text-body-2 mt-1">{{ subtitle }}</div>
-          </slot>
-        </div>
-
-        <div class="cloud-divider mt-4"></div>
-
-        <!-- 表單區：若內容偏多，只在卡片內滾動 -->
-        <div class="auth-body px-6 pb-6 pt-4">
-          <slot />
-        </div>
-      </v-card>
+    <!-- 置中內容：讓各頁面自己決定卡片寬高與樣式 -->
+    <div class="center-slot">
+      <slot />
     </div>
   </v-container>
 </template>
 
 <style scoped>
-/* 讓整頁以視窗高度為上限，禁用全頁捲動 */
 .auth-root {
-  height: 100vh;
-  overflow: hidden; /* ✅ 不要出現頁面 scrollbar */
-  background: var(--c-cream); /* 奶油色背景 */
+  height: 100%; /* ✅ 在 .app-frame 內用 100% 避免多餘 scrollbar */
+  overflow: hidden; /* ✅ 整頁不出全域捲動 */
   position: relative;
-  padding: 0; /* 無多餘內距，視覺更乾淨 */
+  padding: 0;
   display: grid;
-  place-items: center; /* 置中卡片 */
+  place-items: center; /* 置中 default slot */
 }
 
-/* 中央卡片容器（避免被 side 區干擾點擊） */
-.auth-center {
-  position: relative;
+/* HERO 位置（不含樣式，讓頁面自己定字型/大小） */
+.hero {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 2;
 }
 
-/* 海報感卡片：白底、黑框、圓角 */
-.poster {
-  background-color: #fff !important;
-  border: 3px solid #111 !important; /* 粗黑框 */
+.center-slot {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
 }
 
-/* 卡片寬高：手機 90vw，桌機 clamp 到 maxWidth；高度不超過視窗 */
-.auth-card {
-  inline-size: clamp(320px, 90vw, v-bind(maxWidth)); /* 讀 props（SFC v-bind in CSS） */
-  max-height: min(92vh, 680px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* 表單區內滾動（而不是整頁滾） */
-.auth-body {
-  overflow: auto;
-  max-height: calc(92vh - 160px); /* 扣掉標題與上下裝飾的空間 */
-}
-
-/* 兩側粒子區：固定在左右，指標事件穿透 */
+/* 粒子背景（左右鋪開） */
 .particles-side {
   position: absolute;
   top: 0;
@@ -145,16 +114,12 @@ const particleOptions = computed(() => ({
   right: 0;
 }
 
-/* 手機：側邊動畫縮小或隱藏（避免擁擠） */
 @media (max-width: 768px) {
   .particles-side {
     display: none;
-  }
-  .auth-card {
-    max-height: min(92vh, 720px);
-  }
-  .auth-body {
-    max-height: calc(92vh - 150px);
+  } /* 行動裝置自動隱藏粒子以免擁擠/耗電 */
+  .hero {
+    top: 8% !important;
   }
 }
 </style>

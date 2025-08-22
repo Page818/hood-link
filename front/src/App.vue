@@ -141,6 +141,7 @@ html,
 body,
 #app {
   height: 100%;
+  background: var(--c-ink);
 }
 
 .clickable {

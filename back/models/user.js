@@ -2,8 +2,7 @@
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
-import { mongooseIdPlugin } from '../utils/mongooseIdPlugin.js' // ← 新增
-
+import { mongooseIdPlugin } from "../utils/mongooseIdPlugin.js"; // ← 新增
 
 // 使用者資料模型
 const userSchema = new mongoose.Schema(
@@ -91,7 +90,10 @@ userSchema.pre("save", async function (next) {
 	next();
 });
 
+userSchema.index({ phone: 1 }, { sparse: true });
+userSchema.index({ lineId: 1 }, { sparse: true });
+userSchema.index({ name: "text", email: "text" });
 
-userSchema.plugin(mongooseIdPlugin)
+userSchema.plugin(mongooseIdPlugin);
 const User = mongoose.model("User", userSchema);
 export default User;

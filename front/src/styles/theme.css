@@ -305,7 +305,7 @@
   position: fixed;
   width: 100%;
   min-height: 100vh;
-  inset: 12px;
+  /* inset: 12px; */
   border: 6px solid var(--c-ink);
   border-radius: 16px;
   background: var(--c-cream);
@@ -359,4 +359,13 @@ body,
 }
 body {
   background: var(--c-cream);
+}
+
+/* 品牌標題字：荊南波波黑 Bold */
+@font-face {
+  font-family: 'HoodBrandTitle';
+  src: url('/fonts/荊南波波黑-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }

@@ -414,3 +414,24 @@ export const getMyReports = async (req, res) => {
 		});
 	}
 };
+
+// 註冊時取得資料比對
+export const checkAvailability = async (req, res) => {
+	try {
+		const { email, phone } = req.query;
+		if (!email && !phone) {
+			return res.status(400).json({ message: "email 或 phone 至少提供一個" });
+		}
+
+		const filter = {};
+		if (email) filter.email = String(email).trim().toLowerCase();
+		if (phone) filter.phone = String(phone).trim();
+
+		const exists = await User.exists(filter);
+		// 與前端約定：available=true 代表「可用、未被註冊」
+		return res.json({ available: !exists });
+	} catch (err) {
+		console.error("checkAvailability error:", err);
+		return res.status(500).json({ message: "檢查失敗" });
+	}
+};

@@ -70,7 +70,13 @@
 
       <!-- 操作 -->
       <template #item.actions="{ item }">
-        <v-btn icon :to="`/admin/community/${communityId}/reports/${item._id}`">
+        <v-btn
+          icon
+          :to="{
+            name: 'admin.community.report.detail',
+            params: { communityId, reportId: item._id },
+          }"
+        >
           <v-icon>mdi-eye</v-icon>
         </v-btn>
         <v-btn icon @click="deleteReport(item._id)">
