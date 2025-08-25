@@ -4,16 +4,16 @@ import { StatusCodes } from "http-status-codes";
 import Community from "../models/community.js";
 import User from "../models/user.js";
 
-const sameId = (a, b) => String(a) === String(b);
+// const sameId = (a, b) => String(a) === String(b);
 const isOid = (v) => mongoose.isValidObjectId(v);
 
-const ensureAdmin = (community, userId) => {
-	if (!community?.admins?.some((a) => sameId(a, userId))) {
-		const err = new Error("你不是此社區管理員，無操作權限");
-		err.status = StatusCodes.FORBIDDEN;
-		throw err;
-	}
-};
+// const ensureAdmin = (community, userId) => {
+// 	if (!community?.admins?.some((a) => sameId(a, userId))) {
+// 		const err = new Error("你不是此社區管理員，無操作權限");
+// 		err.status = StatusCodes.FORBIDDEN;
+// 		throw err;
+// 	}
+// };
 
 /** 取得成員/管理員列表（僅管理員） */
 export const listMembers = async (req, res) => {
@@ -34,7 +34,7 @@ export const listMembers = async (req, res) => {
 				.status(StatusCodes.NOT_FOUND)
 				.json({ success: false, message: "找不到社區" });
 		}
-		ensureAdmin(community, req.user._id);
+		// ensureAdmin(community, req.user._id);
 
 		res.status(StatusCodes.OK).json({
 			success: true,
@@ -74,7 +74,7 @@ export const addMember = async (req, res) => {
 				.status(StatusCodes.NOT_FOUND)
 				.json({ success: false, message: "找不到社區或使用者" });
 		}
-		ensureAdmin(community, req.user._id);
+		// ensureAdmin(community, req.user._id);
 
 		// 社區端：避免重複，使用 $addToSet
 		await Community.updateOne(
@@ -114,7 +114,7 @@ export const removeMember = async (req, res) => {
 				.status(StatusCodes.NOT_FOUND)
 				.json({ success: false, message: "找不到社區" });
 		}
-		ensureAdmin(community, req.user._id);
+		// ensureAdmin(community, req.user._id);
 
 		// 不可移除仍是管理員的成員，請先降權
 		if (community.admins.some((a) => sameId(a, userId))) {
@@ -162,7 +162,7 @@ export const addAdmin = async (req, res) => {
 				.status(StatusCodes.NOT_FOUND)
 				.json({ success: false, message: "找不到社區" });
 		}
-		ensureAdmin(community, req.user._id);
+		// ensureAdmin(community, req.user._id);
 
 		// 指派管理員前，確保他是成員
 		await Community.updateOne(
@@ -202,7 +202,7 @@ export const removeAdmin = async (req, res) => {
 				.status(StatusCodes.NOT_FOUND)
 				.json({ success: false, message: "找不到社區" });
 		}
-		ensureAdmin(community, req.user._id);
+		// ensureAdmin(community, req.user._id);
 
 		// 不可把「最後一位管理員」移除
 		if (

@@ -10,13 +10,11 @@
         <v-card elevation="2">
           <v-card-title class="text-subtitle-1 font-weight-bold"> 我的社區 </v-card-title>
           <v-divider />
-
           <v-card-text>
             <v-skeleton-loader v-if="loading.my" type="list-item-two-line" class="mb-2" />
             <v-alert v-else-if="myCommunities.length === 0" type="info" variant="tonal">
               你目前尚未加入任何社區，請在右側輸入社區 ID 加入。
             </v-alert>
-
             <v-list v-else nav>
               <v-list-item
                 v-for="c in myCommunities"
@@ -41,7 +39,6 @@
         <v-card elevation="2" class="mb-6">
           <v-card-title class="text-subtitle-1 font-weight-bold"> 以社區 ID 加入 </v-card-title>
           <v-divider />
-
           <v-card-text>
             <v-row class="align-center" dense>
               <v-col cols="12" md="8">
@@ -88,8 +85,13 @@
                       </span>
                     </div>
                   </div>
-                  <v-btn color="primary" :loading="loading.join" @click="joinCommunity">
-                    加入
+                  <v-btn
+                    color="primary"
+                    :loading="loading.join"
+                    :disabled="joinButtonDisabled"
+                    @click="joinCommunity"
+                  >
+                    {{ joinButtonText }}
                   </v-btn>
                 </v-card-title>
               </v-card>
@@ -97,7 +99,7 @@
           </v-card-text>
         </v-card>
 
-        <!-- 建立新社區（可選，先保留） -->
+        <!-- 建立新社區（保留） -->
         <v-card elevation="2">
           <v-card-title class="text-subtitle-1 font-weight-bold"> 建立新社區 </v-card-title>
           <v-divider />
@@ -144,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -172,16 +174,21 @@ function goCommunity(id) {
 
 // 右側：以 ID 查詢 + 加入
 const form = ref({ communityId: '' })
-const lookup = ref({ community: null, error: '' })
+const lookup = ref({ community: null, error: '', status: 'none' })
 
 async function lookupCommunity() {
   lookup.value.error = ''
   lookup.value.community = null
+  lookup.value.status = 'none'
   if (!form.value.communityId) return
   loading.value.lookup = true
   try {
     const { data } = await api.get(`/communities/${form.value.communityId}`)
     lookup.value.community = data.community
+
+    // 查詢使用者在社區的狀態
+    const statusRes = await api.get(`/communities/${form.value.communityId}/status`)
+    lookup.value.status = statusRes.data.status
   } catch (err) {
     console.error('❌ 查詢社區失敗', err)
     lookup.value.error = err?.response?.data?.message || '查無此社區'
@@ -196,10 +203,10 @@ async function joinCommunity() {
   try {
     const body = { communityId: lookup.value.community._id }
     const { data } = await api.post('/communities/join', body)
-    // 加入成功或送出申請，提示並刷新左側清單
     alert(data.message || '已送出加入')
     await fetchMyCommunities()
-    // 若為公開社區，通常會直接加入，導到該社區大廳最順
+    const statusRes = await api.get(`/communities/${lookup.value.community._id}/status`)
+    lookup.value.status = statusRes.data.status
     if (data.success && lookup.value.community.isPublic) {
       router.push({
         name: 'community.dashboard',
@@ -214,7 +221,26 @@ async function joinCommunity() {
   }
 }
 
-// 建立新社區（可選）
+// 加入按鈕文字
+const joinButtonText = computed(() => {
+  switch (lookup.value.status) {
+    case 'member':
+      return '已加入'
+    case 'pending':
+      return '待審核'
+    case 'rejected':
+      return '重新申請'
+    default:
+      return '加入'
+  }
+})
+
+// 加入按鈕狀態
+const joinButtonDisabled = computed(() => {
+  return lookup.value.status === 'member' || lookup.value.status === 'pending'
+})
+
+// 建立新社區
 const createForm = ref({ name: '', address: '', isPublic: true })
 const createMsg = ref('')
 
@@ -224,7 +250,6 @@ async function createCommunity() {
   try {
     const { data } = await api.post('/communities/create', createForm.value)
     createMsg.value = '社區建立成功'
-    // 建立者自動成員，刷新我的社區
     await fetchMyCommunities()
   } catch (err) {
     console.error('❌ 建立社區失敗', err)

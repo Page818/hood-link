@@ -42,7 +42,10 @@ const auth = async (req, res, next) => {
 		}
 
 		// 4) 掛到 req.user，後續控制器統一用 req.user._id
-		req.user = user;
+		// req.user = user;
+		// 4) 掛到 req.user（轉成 plain object 並把 _id 轉字串，避免後續型別不一致）
+		const plain = user.toObject ? user.toObject() : user;
+		req.user = { ...plain, _id: user._id.toString() };
 
 		// 5) 放行
 		next();

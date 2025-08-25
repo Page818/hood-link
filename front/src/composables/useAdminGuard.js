@@ -1,105 +1,48 @@
 // src/composables/useAdminGuard.js
-import { ref, computed, onMounted, unref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { ref, onMounted } from 'vue'
 import api from '@/services/api'
-import { toId } from '@/utils/id'
+import { useUserStore } from '@/stores/user'
 
-/**
- * options:
- *  - redirectOnFail: boolean = true   // 驗證失敗是否自動轉址
- *  - redirectTo: string = '/'         // 轉址目標
- *  - verbose: boolean = true          // 是否在 console 顯示除錯資訊
- */
-export function useAdminGuard(communityId, options = {}) {
-  const { redirectOnFail = true, redirectTo = '/', verbose = true } = options
-
-  const router = useRouter()
+export function useAdminGuard(communityId) {
   const userStore = useUserStore()
-
-  const loading = ref(true)
   const isAdmin = ref(false)
+  const loading = ref(true)
   const error = ref(null)
-  const redirected = ref(false)
 
-  // 1) 確保 Authorization 已掛上
-  const token = localStorage.getItem('token')
-  if (token && !api.defaults.headers?.common?.Authorization) {
-    api.defaults.headers.common.Authorization = `Bearer ${token}`
-    verbose && console.log('[Guard] Attached Authorization from localStorage')
-  }
-
-  const cid = computed(() => String(unref(communityId) || ''))
-  const userId = computed(() => toId(userStore.user?._id))
-
-  const ensureUserLoaded = async () => {
-    if (!token) return
-    if (!userStore.user?._id) {
-      try {
-        const { data } = await api.get('/users/me')
-        if (data?.user) {
-          userStore.setUser?.(data.user) || (userStore.user = data.user)
-          localStorage.setItem('user', JSON.stringify(data.user))
-          verbose && console.log('[Guard] /users/me loaded:', toId(data.user?._id))
-        }
-      } catch (e) {
-        verbose && console.warn('[Guard] /users/me failed:', e?.response?.status)
-      }
-    }
-  }
-
-  const checkAdmin = async () => {
-    loading.value = true
-    error.value = null
+  onMounted(async () => {
     try {
-      await ensureUserLoaded()
-
-      if (!cid.value) {
-        error.value = '缺少 communityId'
-        return
-      }
-      if (!userId.value) {
-        error.value = '尚未取得使用者 ID'
+      if (!userStore.user?._id) {
+        error.value = '請先登入'
         return
       }
 
-      const res = await api.get(`/communities/${cid.value}/members`)
-      const adminsRaw = res.data?.admins || []
-      // 2) 統一把 admins 轉成 ID（兼容 object / string）
-      const adminIds = adminsRaw.map((a) => toId(a)).filter(Boolean)
+      console.log('[Guard] 檢查管理員:', {
+        userId: userStore.user._id,
+        communityId,
+      })
 
-      isAdmin.value = adminIds.includes(userId.value)
+      // 從 /members API 拿 admins & members
+      const res = await api.get(`/communities/${communityId}/members`, {
+        headers: { 'Cache-Control': 'no-cache' },
+      })
 
-      if (verbose) {
-        console.log('[Guard] checkAdmin →', {
-          communityId: cid.value,
-          userId: userId.value,
-          adminIds,
-          isAdmin: isAdmin.value,
-        })
-      }
+      // 取回的 admins 是已 populate 的使用者陣列
+      const admins = res.data?.admins || []
+      console.log('[Guard] 後端返回 admins:', admins)
+
+      // 以 _id 做比對
+      isAdmin.value = admins.some((a) => String(a._id) === String(userStore.user._id))
 
       if (!isAdmin.value) {
-        error.value = '您不是管理員，無法存取此頁面'
-        if (redirectOnFail && !redirected.value) {
-          redirected.value = true
-          router.push(redirectTo)
-        }
+        error.value = '您不是此社區的管理員'
       }
     } catch (err) {
-      error.value = '無法驗證管理員身分'
-      verbose && console.error('[Guard] checkAdmin error:', err?.response || err)
-      if (redirectOnFail && !redirected.value) {
-        redirected.value = true
-        router.push(redirectTo)
-      }
+      console.error('[Guard] API 請求失敗:', err)
+      error.value = err?.response?.data?.message || '驗證失敗'
     } finally {
       loading.value = false
     }
-  }
+  })
 
-  onMounted(checkAdmin)
-
-  // 對外暴露一個 recheck，當路由或 store 更新時可手動重驗
-  return { isAdmin, loading, error, recheck: checkAdmin }
+  return { isAdmin, loading, error }
 }

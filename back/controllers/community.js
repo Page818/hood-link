@@ -1,12 +1,12 @@
-// controllers/community.js
+import mongoose from "mongoose";
 import Community from "../models/community.js";
-import { StatusCodes } from "http-status-codes";
 import User from "../models/user.js";
 import JoinRequest from "../models/joinRequest.js";
+import { StatusCodes } from "http-status-codes";
 
-import mongoose from "mongoose";
-
-// ✅ 建立新社區
+/**
+ * 建立新社區
+ */
 export const createCommunity = async (req, res) => {
 	try {
 		const { name, address, isPublic } = req.body;
@@ -18,8 +18,8 @@ export const createCommunity = async (req, res) => {
 			});
 		}
 
+		// 避免重複社區
 		const existing = await Community.findOne({ name });
-
 		if (existing) {
 			return res.status(StatusCodes.CONFLICT).json({
 				success: false,
@@ -27,6 +27,7 @@ export const createCommunity = async (req, res) => {
 			});
 		}
 
+		// 建立新社區
 		const newCommunity = new Community({
 			name,
 			address,
@@ -37,9 +38,9 @@ export const createCommunity = async (req, res) => {
 		});
 
 		await newCommunity.save();
-		// 建立成功後
-		const user = await User.findById(req.user._id);
 
+		// 更新使用者的 community 欄位
+		const user = await User.findById(req.user._id);
 		if (!user) {
 			return res.status(StatusCodes.NOT_FOUND).json({
 				success: false,
@@ -47,12 +48,9 @@ export const createCommunity = async (req, res) => {
 			});
 		}
 
-		// ✅ 確保欄位為陣列
 		if (!Array.isArray(user.community)) {
 			user.community = [];
 		}
-
-		// ✅ 避免重複加入
 		if (!user.community.includes(newCommunity._id)) {
 			user.community.push(newCommunity._id);
 		}
@@ -65,7 +63,7 @@ export const createCommunity = async (req, res) => {
 			community: newCommunity,
 		});
 	} catch (err) {
-		console.error("❌ 建立社區失敗", err);
+		console.error("❌ 建立社區失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "建立社區失敗",
@@ -73,10 +71,83 @@ export const createCommunity = async (req, res) => {
 	}
 };
 
-// ✅ 加入社區（公開直接加入；非公開需審核）
+// 取得使用者在某個社區的狀態
+export const getCommunityStatus = async (req, res) => {
+	try {
+		const { communityId } = req.params;
+		const userId = req.user._id; // 由 auth middleware 提供
+
+		if (!mongoose.Types.ObjectId.isValid(communityId)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				success: false,
+				message: "無效的社區 ID",
+			});
+		}
+
+		// 先檢查社區是否存在
+		const community = await Community.findById(communityId);
+		if (!community) {
+			return res.status(StatusCodes.NOT_FOUND).json({
+				success: false,
+				message: "找不到該社區",
+			});
+		}
+
+		// 判斷使用者是否已是成員
+		const isMember = community.members.some(
+			(m) => m.toString() === userId.toString()
+		);
+		if (isMember) {
+			return res.status(StatusCodes.OK).json({
+				success: true,
+				status: "member", // 已加入
+			});
+		}
+
+		// 判斷是否是管理員
+		const isAdmin = community.admins.some(
+			(a) => a.toString() === userId.toString()
+		);
+		if (isAdmin) {
+			return res.status(StatusCodes.OK).json({
+				success: true,
+				status: "admin", // 管理員
+			});
+		}
+
+		// 檢查是否已送出申請
+		const joinRequest = await JoinRequest.findOne({
+			community: communityId,
+			user: userId,
+		});
+
+		if (joinRequest) {
+			return res.status(StatusCodes.OK).json({
+				success: true,
+				status: joinRequest.status, // "pending" | "approved" | "rejected"
+			});
+		}
+
+		// 如果以上皆不是，回傳尚未申請
+		return res.status(StatusCodes.OK).json({
+			success: true,
+			status: "none", // 尚未申請
+		});
+	} catch (error) {
+		console.error("取得社區狀態失敗:", error);
+		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: "伺服器錯誤",
+		});
+	}
+};
+/**
+ * 加入社區（公開 → 直接加入；非公開 → 建立申請）
+ */
 export const joinCommunity = async (req, res) => {
 	try {
 		const { communityId } = req.body;
+		const userId = req.user._id;
 
 		if (!communityId) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
@@ -85,19 +156,15 @@ export const joinCommunity = async (req, res) => {
 			});
 		}
 
-		// ✅ 加上 ObjectId 格式驗證
 		if (!mongoose.isValidObjectId(communityId)) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
 				message: "請提供有效的社區 ID",
 			});
 		}
-		// console.log("👉 傳入的社區 ID:", communityId);
-		// console.log("👉 當前登入使用者 ID:", req.user._id);
 
 		const community = await Community.findById(communityId);
-		// const user = await User.findById(req.user.userId);
-		const user = req.user;
+		const user = await User.findById(userId);
 
 		if (!community || !user) {
 			return res.status(StatusCodes.NOT_FOUND).json({
@@ -107,18 +174,18 @@ export const joinCommunity = async (req, res) => {
 		}
 
 		// 已是成員
-		if (community.members.includes(user._id)) {
+		if (community.members.includes(userId)) {
 			return res.status(StatusCodes.CONFLICT).json({
 				success: false,
 				message: "你已經是該社區成員",
 			});
 		}
 
-		// 若為非公開社區，建立申請單（避免重複申請）
+		// **非公開社區 → 建立 JoinRequest**
 		if (!community.isPublic) {
 			const existingRequest = await JoinRequest.findOne({
 				community: communityId,
-				user: user._id,
+				user: userId,
 				status: "pending",
 			});
 
@@ -129,45 +196,46 @@ export const joinCommunity = async (req, res) => {
 				});
 			}
 
-			const newRequest = new JoinRequest({
+			await JoinRequest.create({
 				community: communityId,
-				user: user._id,
+				user: userId,
+				status: "pending",
 			});
-
-			await newRequest.save();
 
 			return res.status(StatusCodes.OK).json({
 				success: true,
 				message: "已送出加入申請，請等待管理員審核",
+				joined: false,
 			});
 		}
 
-		// ✅ 公開社區：直接加入
-		community.members.push(user._id);
+		// **公開社區 → 直接加入**
+		community.members.push(userId);
 		await community.save();
 
-		// ✅ 更新使用者資料（community 欄位為陣列）
 		if (!Array.isArray(user.community)) {
 			user.community = [];
 		}
 		user.community.push(community._id);
 		await user.save();
 
-		return res.status(StatusCodes.OK).json({
+		res.status(StatusCodes.OK).json({
 			success: true,
 			message: "成功加入社區",
+			joined: true,
 		});
 	} catch (err) {
-		console.error("❌ 加入社區錯誤", err);
+		console.error("❌ 加入社區失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "加入社區失敗",
-			error: err.message,
 		});
 	}
 };
 
-//  ✅ 更新社區資料
+/**
+ * 更新社區資料（限管理員）
+ */
 export const updateCommunity = async (req, res) => {
 	try {
 		const { communityId, name, address, isPublic } = req.body;
@@ -180,7 +248,6 @@ export const updateCommunity = async (req, res) => {
 		}
 
 		const community = await Community.findById(communityId);
-
 		if (!community) {
 			return res.status(StatusCodes.NOT_FOUND).json({
 				success: false,
@@ -188,15 +255,7 @@ export const updateCommunity = async (req, res) => {
 			});
 		}
 
-		// 僅允許創建者編輯
-		// if (community.creator?.toString() !== req.user?._id?.toString()) {
-		// 	return res.status(StatusCodes.FORBIDDEN).json({
-		// 		success: false,
-		// 		message: "你沒有權限修改這個社區",
-		// 	});
-		// }
-
-		// 僅允許社區管理員編輯
+		// 驗證管理員權限
 		if (!community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
@@ -206,7 +265,7 @@ export const updateCommunity = async (req, res) => {
 
 		if (name) community.name = name;
 		if (address) community.address = address;
-		if (isPublic !== undefined) community.isPublic = isPublic;
+		if (typeof isPublic === "boolean") community.isPublic = isPublic;
 
 		await community.save();
 
@@ -216,16 +275,17 @@ export const updateCommunity = async (req, res) => {
 			community,
 		});
 	} catch (err) {
-		console.error("❌ 更新社區資料失敗", err);
+		console.error("❌ 更新社區資料失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法更新社區資料",
-			error: err.message,
 		});
 	}
 };
 
-// ✅ 取得目前使用者所屬的社區清單
+/**
+ * 取得目前使用者的社區清單
+ */
 export const getMyCommunities = async (req, res) => {
 	try {
 		const communities = await Community.find({ members: req.user._id })
@@ -237,7 +297,7 @@ export const getMyCommunities = async (req, res) => {
 			communities,
 		});
 	} catch (err) {
-		console.error("❌ 取得使用者社區失敗", err);
+		console.error("❌ 取得使用者社區失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法取得社區資料",
@@ -245,16 +305,20 @@ export const getMyCommunities = async (req, res) => {
 	}
 };
 
-// ✅ 取得單一社區詳細資料
+/**
+ * 取得單一社區資料
+ */
 export const getCommunityById = async (req, res) => {
 	try {
 		const { id } = req.params;
+
 		if (!mongoose.isValidObjectId(id)) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				success: false,
 				message: "無效的社區 ID",
 			});
 		}
+
 		const community = await Community.findById(id).populate(
 			"creator",
 			"name email"
@@ -265,9 +329,10 @@ export const getCommunityById = async (req, res) => {
 				message: "找不到該社區",
 			});
 		}
+
 		res.status(StatusCodes.OK).json({ success: true, community });
 	} catch (err) {
-		console.error("❌ 取得社區失敗", err);
+		console.error("❌ 取得社區資料失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法取得社區資料",
@@ -275,7 +340,9 @@ export const getCommunityById = async (req, res) => {
 	}
 };
 
-// 取得某社區的加入申請清單（僅限管理員）
+/**
+ * 取得某社區的待審核申請（僅限管理員）
+ */
 export const getJoinRequests = async (req, res) => {
 	try {
 		const { communityId } = req.params;
@@ -288,38 +355,22 @@ export const getJoinRequests = async (req, res) => {
 			});
 		}
 
-		// console.log("目前登入者：", req.user._Id);
-		// console.log("社區建立者：", community.creator.toString());
-
-		// 檢查權限
-
-		// if (community.creator.toString() !== req.user._id.toString()) {
-		// 	return res.status(StatusCodes.FORBIDDEN).json({
-		// 		success: false,
-		// 		message: "你不是此社區的管理員，無法檢視申請",
-		// 	});
-		// }
-
-		// 檢查權限（是否為管理員）
+		// 驗證是否為管理員
 		if (!community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
-				message: "你不是此社區的管理員，無法檢視申請",
+				message: "你沒有權限檢視申請",
 			});
 		}
 
-		// 撈出待審核申請
 		const requests = await JoinRequest.find({
 			community: communityId,
 			status: "pending",
 		}).populate("user", "name email");
 
-		res.status(StatusCodes.OK).json({
-			success: true,
-			requests,
-		});
+		res.status(StatusCodes.OK).json({ success: true, requests });
 	} catch (err) {
-		console.error("❌ 取得申請失敗", err);
+		console.error("❌ 取得申請清單失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法取得申請清單",
@@ -327,15 +378,14 @@ export const getJoinRequests = async (req, res) => {
 	}
 };
 
-// 審核加入社區的申請（accept/reject）
+/**
+ * 審核加入申請
+ */
 export const reviewJoinRequest = async (req, res) => {
 	try {
-		console.log("🎯 進入 reviewJoinRequest");
-
-		const { requestId, decision } = req.body; // decision: "approved" | "rejected"
+		const { requestId, decision } = req.body;
 
 		const request = await JoinRequest.findById(requestId).populate("community");
-
 		if (!request) {
 			return res.status(StatusCodes.NOT_FOUND).json({
 				success: false,
@@ -343,19 +393,13 @@ export const reviewJoinRequest = async (req, res) => {
 			});
 		}
 
-		// 僅社區 creator 可審核
-		// if (request.community.creator.toString() !== req.user._id.toString()) {
-		// 	return res.status(StatusCodes.FORBIDDEN).json({
-		// 		success: false,
-		// 		message: "你沒有權限審核這項申請",
-		// 	});
-		// }
+		const community = request.community;
 
-		// 僅社區管理員可審核
-		if (!request.community.admins.includes(req.user._id)) {
+		// 僅限管理員
+		if (!community.admins.includes(req.user._id)) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
-				message: "你沒有權限審核這項申請",
+				message: "你沒有權限審核此申請",
 			});
 		}
 
@@ -370,15 +414,16 @@ export const reviewJoinRequest = async (req, res) => {
 		request.status = decision;
 		await request.save();
 
-		// 若核准，更新社區與使用者資料
+		// 如果核准 → 加入成員
 		if (decision === "approved") {
-			const user = await User.findById(request.user);
-			if (!request.community.members.includes(user._id)) {
-				request.community.members.push(user._id);
-				await request.community.save();
+			if (!community.members.includes(request.user)) {
+				community.members.push(request.user);
+				await community.save();
 			}
-			if (!user.community.includes(request.community._id)) {
-				user.community.push(request.community._id);
+
+			const user = await User.findById(request.user);
+			if (!user.community.includes(community._id)) {
+				user.community.push(community._id);
 				await user.save();
 			}
 		}
@@ -388,7 +433,7 @@ export const reviewJoinRequest = async (req, res) => {
 			message: `申請已${decision === "approved" ? "核准" : "拒絕"}`,
 		});
 	} catch (err) {
-		console.error("❌ 審核申請錯誤", err);
+		console.error("❌ 審核申請失敗:", err);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
 			success: false,
 			message: "無法審核申請",
