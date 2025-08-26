@@ -2,8 +2,9 @@
 <template>
   <v-container class="py-6">
     <!-- 旗串裝飾 -->
-    <div class="bunting"><span></span><span></span><span></span><span></span><span></span></div>
+    <!-- <div class="bunting"><span></span><span></span><span></span><span></span><span></span></div> -->
 
+    <BackToAdminDashboard :communityId="route.params.communityId" />
     <div class="d-flex align-center justify-space-between mb-4">
       <h1 class="text-h5 font-weight-bold section-title">公告管理</h1>
       <v-btn color="primary" class="cta" @click="openCreateDialog">
@@ -101,6 +102,7 @@ import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import AnnouncementFormDialog from '@/components/admin/AnnouncementFormDialog.vue'
 import { toId } from '@/utils/id'
+import BackToAdminDashboard from '@/components/BakToAdminDashboard.vue'
 
 const route = useRoute()
 const communityId = toId(route.params.communityId)

@@ -1,8 +1,7 @@
 <!-- src/views/LoginView.vue -->
 <template>
-  <!-- heroTop 可拉近/拉遠大標；sideWidth 控兩側粒子區寬度 -->
   <AuthLayout heroTop="12%" sideWidth="50vw">
-    <!-- 卡片外的大標 -->
+    <!-- hero 區塊 -->
     <template #hero>
       <div class="hero-wrap">
         <span class="hero-emoji">🏘️</span>
@@ -10,11 +9,17 @@
       </div>
     </template>
 
-    <!-- 卡片（純奶油底 + 黑框陰影） -->
+    <!-- 登入卡片 -->
     <v-card class="login-card round-xl" elevation="0">
       <div class="text-center text-h6 font-weight-bold mb-4">登入</div>
 
+      <!-- 錯誤提示 -->
+      <v-alert v-if="errorMsg" type="error" density="compact" class="mb-4">
+        {{ errorMsg }}
+      </v-alert>
+
       <v-form @submit.prevent="handleLogin">
+        <!-- 帳號 -->
         <v-text-field
           v-model="form.account"
           label="手機號碼或 Email"
@@ -26,6 +31,8 @@
           autocomplete="username"
           variant="solo-filled"
         />
+
+        <!-- 密碼 -->
         <v-text-field
           v-model="form.password"
           :type="showPwd ? 'text' : 'password'"
@@ -39,14 +46,25 @@
           class="mb-4 round-xl poster-input"
           autocomplete="current-password"
           variant="solo-filled"
+          :aria-label="showPwd ? '隱藏密碼' : '顯示密碼'"
         />
 
-        <v-btn type="submit" size="large" class="btn-bubble-pink" block :loading="loading">
+        <!-- 登入按鈕 -->
+        <v-btn
+          type="submit"
+          size="large"
+          class="btn-bubble-pink"
+          block
+          :loading="loading"
+          :disabled="loading"
+        >
           登入
         </v-btn>
 
+        <!-- 前往註冊 -->
         <div class="text-caption mt-6 text-center">
-          尚未註冊？<router-link to="/register">前往註冊</router-link>
+          尚未註冊？
+          <router-link to="/register">前往註冊</router-link>
         </div>
       </v-form>
     </v-card>
@@ -66,13 +84,16 @@ const userStore = useUserStore()
 const form = reactive({ account: '', password: '' })
 const loading = ref(false)
 const showPwd = ref(false)
+const errorMsg = ref('')
 
 const rules = { required: (v) => !!v || '此欄位為必填' }
 
 const handleLogin = async () => {
   if (!form.account || !form.password) return
   loading.value = true
+  errorMsg.value = ''
   try {
+    // 1. 登入拿 Token
     const { data } = await api.post('/users/login', {
       account: form.account.trim(),
       password: form.password.trim(),
@@ -82,16 +103,20 @@ const handleLogin = async () => {
     localStorage.setItem('token', token)
     api.defaults.headers.common.Authorization = `Bearer ${token}`
 
+    // 2. 取得完整使用者資料
     const meRes = await api.get('/users/me')
-    const fullUser = meRes.data.user
+    const fullUser = meRes?.data?.user || null
+    if (!fullUser) throw new Error('無法取得使用者資料')
+
     userStore.setUser(fullUser)
     localStorage.setItem('user', JSON.stringify(fullUser))
 
+    // 3. 判斷導向
     const hasCommunity = Array.isArray(fullUser.community) && fullUser.community.length > 0
     router.push(hasCommunity ? '/dashboard' : '/community/join')
   } catch (err) {
-    if (import.meta.env.DEV) console.error('❌ 登入失敗', err)
-    alert(err?.response?.data?.message || '登入失敗，請檢查帳號密碼')
+    console.error('❌ 登入失敗', err)
+    errorMsg.value = err?.response?.data?.message || '登入失敗，請檢查帳號密碼'
   } finally {
     loading.value = false
   }
@@ -99,7 +124,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* ==== HERO 外觀（卡片外大標） ==== */
+/* ==== HERO 樣式 ==== */
 .hero-wrap {
   display: inline-flex;
   white-space: nowrap;
@@ -121,34 +146,8 @@ const handleLogin = async () => {
 .hero-emoji {
   font-size: 1.8em;
 }
-@media (min-width: 1280px) {
-  .hero-text {
-    font-size: clamp(48px, 5vw, 96px);
-  }
-  .hero-emoji {
-    font-size: 2.2em;
-  }
-}
-@media (min-width: 1920px) {
-  .hero-text {
-    font-size: clamp(64px, 4vw, 128px);
-  }
-  .hero-emoji {
-    font-size: 2.6em;
-  }
-}
 
-/* 視窗較矮時字與位置自適應（高度靠 AuthLayout 的 heroTop 控） */
-@media (max-height: 700px) {
-  .hero-text {
-    font-size: clamp(28px, 5vw, 48px);
-  }
-  .hero-emoji {
-    font-size: 1.4em;
-  }
-}
-
-/* ==== 卡片（奶油底 + 黑框陰影海報感） ==== */
+/* ==== 登入卡片 ==== */
 .login-card {
   width: clamp(320px, 86vw, 520px);
   background: var(--c-cream) !important;
@@ -159,7 +158,7 @@ const handleLogin = async () => {
   padding: clamp(16px, 3.2vw, 28px);
 }
 
-/* ==== 黑框奶油底輸入（海報感） ==== */
+/* ==== 奶油底輸入框 ==== */
 .poster-input :deep(.v-field) {
   border: 2px solid #111 !important;
   border-radius: 14px !important;

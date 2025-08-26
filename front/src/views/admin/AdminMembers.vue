@@ -1,5 +1,6 @@
 <template>
   <v-container class="py-6">
+    <BackToAdminDashboard :communityId="route.params.communityId" />
     <h1 class="text-h5 font-weight-bold mb-4">社區成員管理</h1>
 
     <!-- 守衛檢查 -->
@@ -175,6 +176,7 @@ import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useAdminGuard } from '@/composables/useAdminGuard'
 import { useUserStore } from '@/stores/user'
+import BackToAdminDashboard from '@/components/BakToAdminDashboard.vue'
 
 const route = useRoute()
 const communityId = route.params.communityId

@@ -1,6 +1,8 @@
 <!-- src/views/admin/AdminEvent.vue -->
 <template>
   <v-container class="py-6">
+    <BackToAdminDashboard :communityId="route.params.communityId" />
+
     <h1 class="text-h5 font-weight-bold mb-6">活動管理</h1>
 
     <div class="d-flex justify-end mb-4">
@@ -60,6 +62,7 @@ import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { toId } from '@/utils/id'
 import EventFormDialog from '@/components/admin/EventFormDialog.vue'
+import BackToAdminDashboard from '@/components/BakToAdminDashboard.vue'
 
 const route = useRoute()
 const communityId = toId(route.params.communityId)

@@ -6,12 +6,10 @@ import App from './App.vue'
 import router from './router'
 import { createPinia } from 'pinia'
 import '@mdi/font/css/materialdesignicons.css' // MDI 圖示字型
-import Particles from 'vue3-particles'
 
 import vuetify from './plugins/vuetify'
 const app = createApp(App)
 app.use(router)
 app.use(createPinia())
 app.use(vuetify)
-app.use(Particles)
 app.mount('#app')

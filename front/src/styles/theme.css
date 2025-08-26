@@ -309,7 +309,8 @@
   border: 6px solid var(--c-ink);
   border-radius: 16px;
   background: var(--c-cream);
-  overflow: clip; /* 避免內部陰影超出 */
+  overflow: hidden;
+  overflow: clip;
 }
 
 /* 手機可以窄一點的外框邊距 */
@@ -369,3 +370,5 @@ body {
   font-style: normal;
   font-display: swap;
 }
+
+

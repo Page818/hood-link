@@ -20,6 +20,7 @@ import AdminEvent from '@/views/admin/AdminEvent.vue'
 import AdminReport from '@/views/admin/AdminReport.vue'
 import AdminReportDetail from '@/views/admin/AdminReportDetail.vue'
 import AdminMembers from '@/views/admin/AdminMembers.vue'
+import AdminCommunitySetting from '@/views/admin/AdminCommunitySetting.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -167,6 +168,13 @@ const router = createRouter({
       props: true,
       meta: { layout: 'default' },
     },
+    {
+      path: '/admin/community/:communityId/settings',
+      name: 'admin.community.settings',
+      component: AdminCommunitySetting,
+      props: true,
+      meta: { layout: 'default' },
+    }
 
     // （可選）404
     // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue'), meta: { layout: 'default' } },

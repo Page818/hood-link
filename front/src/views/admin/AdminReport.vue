@@ -1,5 +1,6 @@
 <template>
   <v-container class="py-6">
+    <BackToAdminDashboard />
     <div class="d-flex align-center justify-space-between mb-4">
       <h1 class="text-h5 font-weight-bold">通報管理</h1>
       <div class="d-flex ga-3">
@@ -96,6 +97,7 @@ import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { toId } from '@/utils/id'
 import ReportFormDialog from '@/components/admin/ReportFormDialog.vue'
+import BackToAdminDashboard from '@/components/BakToAdminDashboard.vue'
 
 const route = useRoute()
 const communityId = toId(route.params.communityId)

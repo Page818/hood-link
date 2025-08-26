@@ -1,65 +1,21 @@
-<!-- src/layouts/AuthLayout.vue -->
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
-  /** 左右粒子區寬度（建議 18~28vw） */
+  /** 左右裝飾區寬度（建議 18~28vw） */
   sideWidth: { type: String, default: '22vw' },
   /** 大標( hero )距離頂端的位置（例如 '12%'、'80px'） */
   heroTop: { type: String, default: '12%' },
-  /** 可開關粒子（行動裝置或特定頁面可關） */
+  /** 是否顯示粒子（暫時無作用，但保留設定避免改動其他頁面） */
   showParticles: { type: Boolean, default: true },
 })
-
-/* 必須：載入 tsParticles full，否則 char 形狀不會顯示 */
-const particlesInit = async (engine) => {
-  const { loadFull } = await import('tsparticles')
-  await loadFull(engine)
-}
-
-/* 粒子參數：笑臉字元、輕微飄浮 */
-const particleOptions = computed(() => ({
-  background: { color: 'transparent' },
-  detectRetina: true,
-  fpsLimit: 60,
-  fullScreen: { enable: false },
-  particles: {
-    number: { value: 0 },
-    move: { enable: true, speed: 0.6, direction: 'none', outModes: { default: 'out' } },
-    opacity: { value: 0.9 },
-    size: { value: 18, random: { enable: true, minimumValue: 10 } },
-    shape: {
-      type: 'char',
-      character: {
-        value: ['☺', '🙂', '😊'],
-        font: 'Inter, Noto Sans TC, sans-serif',
-        weight: '700',
-      },
-    },
-    color: { value: '#1F2937' },
-  },
-  emitters: [
-    {
-      position: { x: 50, y: 0 },
-      rate: { delay: 0.3, quantity: 1 },
-      size: { width: 100, height: 0 },
-    },
-  ],
-  interactivity: { events: { onHover: { enable: false }, resize: true } },
-}))
 </script>
 
 <template>
-  <!-- 整頁尺寸與置中；不設定背景、不設定卡片樣式 -->
+  <!-- 整頁尺寸與置中 -->
   <v-container fluid class="auth-root">
-    <!-- 左右粒子背景（不可互動） -->
+    <!-- 粒子區塊：目前不顯示 -->
     <template v-if="showParticles">
-      <div class="particles-side left" :style="{ width: sideWidth }">
-        <Particles id="left-smiles" :init="particlesInit" :options="particleOptions" />
-      </div>
-      <div class="particles-side right" :style="{ width: sideWidth }">
-        <Particles id="right-smiles" :init="particlesInit" :options="particleOptions" />
-      </div>
+      <div class="particles-side left" :style="{ width: sideWidth }"></div>
+      <div class="particles-side right" :style="{ width: sideWidth }"></div>
     </template>
 
     <!-- 外層 HERO（卡片外的大標） -->
@@ -76,8 +32,8 @@ const particleOptions = computed(() => ({
 
 <style scoped>
 .auth-root {
-  height: 100%; /* ✅ 在 .app-frame 內用 100% 避免多餘 scrollbar */
-  overflow: hidden; /* ✅ 整頁不出全域捲動 */
+  height: 100%; /* 在 .app-frame 內用 100% 避免多餘 scrollbar */
+  overflow: hidden; /* 整頁不出全域捲動 */
   position: relative;
   padding: 0;
   display: grid;
@@ -99,7 +55,7 @@ const particleOptions = computed(() => ({
   place-items: center;
 }
 
-/* 粒子背景（左右鋪開） */
+/* 左右背景預留 */
 .particles-side {
   position: absolute;
   top: 0;

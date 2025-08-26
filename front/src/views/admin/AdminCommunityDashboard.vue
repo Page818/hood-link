@@ -1,6 +1,7 @@
 <!-- src/views/admin/AdminCommunityDashboard.vue -->
 <template>
   <v-container class="py-8">
+    
     <div class="mb-6">
       <h1 class="text-h5 font-weight-bold">社區後台選單</h1>
       <div class="text-medium-emphasis">滑動卡片或點擊進入各管理頁</div>
@@ -104,6 +105,14 @@ const cards = [
     icon: 'mdi-heart-pulse',
     desc: '災時安否回覆與統計儀表板。',
     to: { name: 'admin-checkin', params: { communityId } },
+  },
+  {
+    title: '社區設定',
+    subtitle: 'Settings',
+    value: 'settings',
+    icon: 'mdi-cog-outline',
+    desc: '社區基本資料與設定。',
+    to: { name: 'admin.community.settings', params: { communityId } },
   },
 ]
 

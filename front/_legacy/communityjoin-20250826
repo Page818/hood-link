@@ -99,52 +99,18 @@
           </v-card-text>
         </v-card>
 
-        <!-- 建立新社區 -->
+        <!-- 建立新社區（保留） -->
         <v-card elevation="2">
           <v-card-title class="text-subtitle-1 font-weight-bold"> 建立新社區 </v-card-title>
           <v-divider />
           <v-card-text>
             <v-row dense>
-              <!-- 社區名稱 -->
               <v-col cols="12" md="4">
                 <v-text-field v-model="createForm.name" label="社區名稱" density="comfortable" />
               </v-col>
-
-              <!-- 縣市 -->
-              <v-col cols="12" md="3">
-                <v-select
-                  v-model="createForm.city"
-                  :items="cities"
-                  item-title="city"
-                  item-value="city"
-                  label="縣市"
-                  density="comfortable"
-                  @update:modelValue="createForm.district = ''"
-                />
-              </v-col>
-
-              <!-- 區域 -->
-              <v-col cols="12" md="3">
-                <v-select
-                  v-model="createForm.district"
-                  :items="districtsForSelectedCity"
-                  :disabled="!createForm.city"
-                  label="區域"
-                  density="comfortable"
-                />
-              </v-col>
-
-              <!-- 詳細地址 -->
               <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="createForm.detailAddress"
-                  label="詳細地址"
-                  density="comfortable"
-                  :disabled="!createForm.city || !createForm.district"
-                />
+                <v-text-field v-model="createForm.address" label="社區地址" density="comfortable" />
               </v-col>
-
-              <!-- 公開設定 -->
               <v-col cols="12" md="2" class="d-flex align-center">
                 <v-switch
                   v-model="createForm.isPublic"
@@ -159,12 +125,7 @@
               <v-btn
                 color="primary"
                 :loading="loading.create"
-                :disabled="
-                  !createForm.name ||
-                  !createForm.city ||
-                  !createForm.district ||
-                  !createForm.detailAddress
-                "
+                :disabled="!createForm.name || !createForm.address"
                 @click="createCommunity"
               >
                 建立
@@ -188,7 +149,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
-import taiwanDistricts from '@/assets/taiwanDistricts.json'
 
 const router = useRouter()
 
@@ -226,6 +186,7 @@ async function lookupCommunity() {
     const { data } = await api.get(`/communities/${form.value.communityId}`)
     lookup.value.community = data.community
 
+    // 查詢使用者在社區的狀態
     const statusRes = await api.get(`/communities/${form.value.communityId}/status`)
     lookup.value.status = statusRes.data.status
   } catch (err) {
@@ -260,6 +221,7 @@ async function joinCommunity() {
   }
 }
 
+// 加入按鈕文字
 const joinButtonText = computed(() => {
   switch (lookup.value.status) {
     case 'member':
@@ -273,43 +235,22 @@ const joinButtonText = computed(() => {
   }
 })
 
+// 加入按鈕狀態
 const joinButtonDisabled = computed(() => {
   return lookup.value.status === 'member' || lookup.value.status === 'pending'
 })
 
 // 建立新社區
-const createForm = ref({
-  name: '',
-  city: '',
-  district: '',
-  detailAddress: '',
-  isPublic: true,
-})
+const createForm = ref({ name: '', address: '', isPublic: true })
 const createMsg = ref('')
-
-// 台灣縣市清單
-const cities = taiwanDistricts
-
-// 動態取得選取縣市的區域
-const districtsForSelectedCity = computed(() => {
-  const selectedCity = taiwanDistricts.find((item) => item.city === createForm.value.city)
-  return selectedCity ? selectedCity.districts : []
-})
 
 async function createCommunity() {
   createMsg.value = ''
   loading.value.create = true
   try {
-    const address = `${createForm.value.city}${createForm.value.district}${createForm.value.detailAddress}`
-    const payload = {
-      name: createForm.value.name,
-      address,
-      isPublic: createForm.value.isPublic,
-    }
-    const { data } = await api.post('/communities/create', payload)
+    const { data } = await api.post('/communities/create', createForm.value)
     createMsg.value = '社區建立成功'
     await fetchMyCommunities()
-    resetCreate()
   } catch (err) {
     console.error('❌ 建立社區失敗', err)
     alert(err?.response?.data?.message || '建立社區失敗')
@@ -319,13 +260,7 @@ async function createCommunity() {
 }
 
 function resetCreate() {
-  createForm.value = {
-    name: '',
-    city: '',
-    district: '',
-    detailAddress: '',
-    isPublic: true,
-  }
+  createForm.value = { name: '', address: '', isPublic: true }
 }
 
 onMounted(fetchMyCommunities)

@@ -256,7 +256,11 @@ export const updateCommunity = async (req, res) => {
 		}
 
 		// 驗證管理員權限
-		if (!community.admins.includes(req.user._id)) {
+		if (
+			!community.admins.some(
+				(adminId) => adminId.toString() === req.user._id.toString()
+			)
+		) {
 			return res.status(StatusCodes.FORBIDDEN).json({
 				success: false,
 				message: "你沒有權限修改這個社區",
@@ -265,7 +269,14 @@ export const updateCommunity = async (req, res) => {
 
 		if (name) community.name = name;
 		if (address) community.address = address;
-		if (typeof isPublic === "boolean") community.isPublic = isPublic;
+		// if (typeof isPublic === "boolean") community.isPublic = isPublic;
+		if (
+			typeof isPublic === "boolean" ||
+			isPublic === "true" ||
+			isPublic === "false"
+		) {
+			community.isPublic = isPublic === true || isPublic === "true";
+		}
 
 		await community.save();
 

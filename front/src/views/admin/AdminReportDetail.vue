@@ -1,6 +1,7 @@
 <!-- src/views/admin/AdminReportDetail.vue -->
 <template>
   <v-container class="py-8" v-if="!loading">
+    <BackToAdminDashboard />
     <div class="d-flex align-center justify-space-between mb-3">
       <div class="d-flex align-center ga-3">
         <v-btn variant="text" @click="$router.back()">
@@ -74,6 +75,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { toId } from '@/utils/id'
 import ReportFormDialog from '@/components/admin/ReportFormDialog.vue'
+import BackToAdminDashboard from '@/components/BakToAdminDashboard.vue'
 
 const route = useRoute()
 const router = useRouter()
