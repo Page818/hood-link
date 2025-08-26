@@ -22,7 +22,7 @@ const communitySchema = new mongoose.Schema(
 			default: true,
 		},
 
-		// 這是「哪位使用者創建了這個社區」的記錄欄位。
+		// 創建使用者
 		creator: {
 			type: mongoose.Schema.Types.ObjectId,
 			// 指向 User model，可搭配 .populate() 把使用者資料拉出來
