@@ -10,7 +10,7 @@
     <v-img
       v-if="announcement.image"
       :src="announcement.image"
-      max-height="200"
+      max-height="400"
       cover
       class="mb-4 rounded"
     />

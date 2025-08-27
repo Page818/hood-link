@@ -4,56 +4,42 @@
   <div class="app-frame">
     <v-app>
       <!-- 共用 AppBar（登入/註冊頁不顯示） -->
-      <v-app-bar
-        v-if="layout !== 'auth'"
-        flat
-        color="transparent"
-        class="appbar"
-        density="comfortable"
-      >
-        <!-- 左側 Logo/標題 -->
-        <v-app-bar-title class="appbar-title clickable" @click="goDashboard">
-          🏘️ <span class="font-weight-bold">好鄰聚</span>
-          <span class="text-medium-emphasis"> hood-link</span>
-        </v-app-bar-title>
-
-        <!-- 右側操作區 -->
-        <template #append>
-          <template v-if="isAuthed">
-            <!-- 使用者頭像 -->
-            <v-btn
-              icon
-              :to="{ name: 'me' }"
-              :disabled="loadingUser"
-              class="wiggle"
-              aria-label="個人頁面"
-            >
-              <v-avatar size="36" class="soft-shadow">
-                <template v-if="!loadingUser">
-                  <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="avatar" cover />
-                  <span v-else aria-hidden="true">{{ userInitial }}</span>
-                </template>
-                <template v-else>
-                  <v-skeleton-loader type="avatar" width="32" height="32" />
-                </template>
-              </v-avatar>
-            </v-btn>
-
-            <!-- 登出 -->
-            <v-btn size="small" prepend-icon="mdi-logout" class="cta ml-2" @click="handleLogout">
-              登出
-            </v-btn>
-          </template>
-
-          <template v-else>
-            <v-btn size="small" class="cta" :to="{ name: 'auth.login' }"> 登入 </v-btn>
-          </template>
+      <div class="brand-badge clickable" @click="goDashboard">好鄰聚</div>
+      <v-app-bar v-if="layout !== 'auth'" flat color="transparent" class="appbar ftc" height="100">
+        <!-- 粉紅 CTA + 使用者操作 -->
+        <template #prepend>
+          <!-- 永遠顯示：到社群加入頁 -->
+          <v-btn class="btn-bubble-pink" :to="{ name: 'community.join' }">😆加入社區! </v-btn>
         </template>
+        <template #append>
+          <div class="bar-right">
+            <template v-if="isAuthed">
+              <v-btn
+                icon
+                :to="{ name: 'me' }"
+                :disabled="loadingUser"
+                class="ml-2 avatar-sticker"
+                aria-label="個人頁面"
+              >
+                <v-avatar size="36">
+                  <template v-if="!loadingUser">
+                    <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="avatar" cover />
+                    <span v-else>{{ userInitial }}</span>
+                  </template>
+                  <template v-else>
+                    <v-skeleton-loader type="avatar" width="32" height="32" />
+                  </template>
+                </v-avatar>
+              </v-btn>
 
-        <!-- AppBar 底部旗串裝飾 -->
-        <template #extension>
-          <div class="bunting">
-            <span></span><span></span><span></span><span></span><span></span>
+              <v-btn prepend-icon="mdi-logout" class="ml-2 btn-logout-candy" @click="handleLogout">
+                登出
+              </v-btn>
+            </template>
+
+            <template v-else>
+              <v-btn size="small" class="cta ml-2" :to="{ name: 'auth.login' }">登入</v-btn>
+            </template>
           </div>
         </template>
       </v-app-bar>
@@ -130,13 +116,6 @@ const year = new Date().getFullYear()
 </script>
 
 <style>
-/* NOTE:
-   - 寬度/背景/外框：在 base.css + main.css + theme.css 已處理（#app 滿版、.app-frame、奶油底）
-   - AppBar / Footer 線條也在 theme.css：
-     .appbar { border-bottom: 2px solid var(--c-ink); }
-     .footer { border-top: 2px solid var(--c-ink); }
-*/
-
 html,
 body,
 #app {
@@ -157,5 +136,152 @@ body,
   font-size: 1.35rem;
   letter-spacing: 0.5px;
   color: var(--c-ink);
+}
+
+/* AppBar 容器 */
+.appbar.ftc {
+  position: relative;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+/* === AppBar Layout: 同高、向內收、左右不貼邊 === */
+.appbar .v-toolbar__content {
+  /* 讓 AppBar 內容置中、設定最大寬度與左右內距 */
+  /* 依你的頁寬可改 1080/1200 */
+  max-width: 1120px;
+  margin: 0 auto;
+  height: 100px;
+  display: flex;
+  align-items: center; /* 垂直置中所有按鈕 */
+}
+.appbar .v-toolbar__prepend,
+.appbar .v-toolbar__append {
+  display: flex;
+  align-items: center; /* 同高對齊 */
+  /* 三顆鈕之間的水平間距 */
+  /* gap: 24px; */
+}
+
+/* 統一三顆按鈕高度（視覺同一條水平線） */
+.appbar .v-btn {
+  height: 60px;
+  align-items: center;
+  font-size: 1.5rem;
+  font-family: 'font02';
+  line-height: 40px;
+  font-weight: 700;
+}
+
+/* 主要 CTA 左邊再微內縮，讓視覺更集中 */
+.appbar .btn-bubble-pink {
+  margin-left: 8px;
+}
+
+/* 右側群組的外距（整組與右側邊緣保持空隙） */
+.appbar .v-toolbar__append {
+  margin-right: 8px;
+}
+
+/* 登出 */
+.btn-logout-candy {
+  background: #ffc857 !important; /* 黃糖果 */
+  color: #111 !important;
+  border: 2px solid #111 !important;
+  border-radius: 999px !important;
+
+  /* padding: 0 16px; */
+  box-shadow: 0 4px 0 #111;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.btn-logout-candy:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #111;
+}
+.btn-logout-candy:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 0 #111;
+}
+.brand-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #111;
+  font-weight: 900;
+  font-size: 4rem;
+  font-family: HoodBrandTitle;
+  letter-spacing: 0.4px;
+  padding: 8px 14px;
+  top: 15px;
+  z-index: 1007;
+  text-shadow:
+    -2px -2px 0 #fff,
+    2px -2px 0 #fff,
+    -2px 2px 0 #fff,
+    2px 2px 0 #fff,
+    -3px -3px 0 #fff,
+    -3px 3px 0 #fff,
+    3px -3px 0 #fff,
+    3px 3px 0 #fff,
+    -4px -4px 0 #111,
+    4px -4px 0 #111,
+    -4px 4px 0 #111,
+    4px 4px 0 #111;
+
+  transition: transform 0.2s ease;
+}
+.brand-badge:hover {
+  transform: scale(1.1) translateX(-50%);
+}
+@keyframes bounce-wiggle {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+  30% {
+    transform: translateX(-50%) scale(1.2) rotate(-5deg);
+  }
+  50% {
+    transform: translateX(-50%) scale(0.95) rotate(4deg);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.05) rotate(-2deg);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* 既有：標題 hover & 可點 */
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.appbar-title:hover {
+  opacity: 0.85;
+}
+
+/* RWD 微調 */
+@media (max-width: 960px) {
+  .brand-badge {
+    top: 18px;
+    padding: 6px 12px;
+    font-size: 0.98rem;
+  }
+}
+
+.app-frame {
+  position: relative;
+}
+.appbar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 95%;
+  height: 2px;
+  background: #111;
+  opacity: 0.9;
 }
 </style>

@@ -1,3 +1,4 @@
+/* src/assets/base.css */
 /* ---------- Reset ---------- */
 *,
 *::before,
@@ -6,7 +7,7 @@
   margin: 0;
 }
 
-*/ :root {
+:root {
   --color-background: var(--c-cream);
   --color-background-soft: #fffaf3;
   --color-background-mute: #fff7ef;
@@ -20,7 +21,7 @@
   --section-gap: 160px;
 }
 
-/* ---------- Typography / Base ---------- */
+/* ---------- Global Layout ---------- */
 html,
 body,
 #app {
@@ -33,6 +34,7 @@ body {
   background: var(--color-background);
   line-height: 1.6;
   font-family:
+    'font02',
     Inter,
     'Noto Sans TC',
     'PingFang TC',
@@ -88,23 +90,4 @@ a:focus-visible {
 body,
 .login-card {
   font-family: var(--ui-font), var(--latin-font);
-}
-
-/* 捲軸（可愛但克制）——可移除 */
-* {
-  scrollbar-width: none;
-  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-}
-*::-webkit-scrollbar {
-  height: 10px;
-  width: 10px;
-}
-*::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1.5px solid transparent;
-  background-clip: padding-box;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
 }

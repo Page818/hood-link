@@ -1,21 +1,4 @@
 /* src/assets/main.css */
 @import './base.css';
 
-/* 讓應用滿版，交給 Vuetify 佈局處理 */
-html,
-body,
-#app {
-  height: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-}
-
-#app {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
 /* 其他個人常用的小工具可以放這裡；不要再動布局 */

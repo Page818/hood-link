@@ -1,43 +1,48 @@
 <!-- src/App.vue -->
 <template>
-  <!-- 海報外框：樣式在 theme.css 的 .app-frame -->
   <div class="app-frame">
     <v-app>
-      <!-- 共用 AppBar（登入/註冊頁不顯示） -->
+      <!-- 中央品牌貼紙（維持原本位置） -->
       <div class="brand-badge clickable" @click="goDashboard">好鄰聚</div>
-      <v-app-bar v-if="layout !== 'auth'" flat color="transparent" class="appbar ftc" height="72">
-        <!-- 右側：粉紅 CTA + 使用者操作 -->
+
+      <!-- AppBar：高度 100px -->
+      <v-app-bar v-if="layout !== 'auth'" flat color="transparent" class="appbar ftc" height="100">
+        <!-- 左：主要 CTA（放大） -->
+        <template #prepend>
+          <v-btn
+            class="btn-bubble-pink appbar-btn appbar-btn--primary"
+            :to="{ name: 'community.join' }"
+          >
+            😆 加入社區!
+          </v-btn>
+        </template>
+
+        <!-- 右：頭像 + 登出（放大、置中） -->
         <template #append>
           <div class="bar-right">
-            <!-- 永遠顯示：到社群加入頁 -->
-            <v-btn class="btn-bubble-pink text-lg-h5" :to="{ name: 'community.join' }"
-              >😆加入社區!
-            </v-btn>
-
             <template v-if="isAuthed">
               <v-btn
                 icon
                 :to="{ name: 'me' }"
                 :disabled="loadingUser"
-                class="ml-2"
+                class="mr-4 appbar-btn--icon avatar-flower"
                 aria-label="個人頁面"
               >
-                <v-avatar size="36">
+                <!-- 放大頭像 -->
+                <v-avatar size="40">
                   <template v-if="!loadingUser">
                     <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="avatar" cover />
                     <span v-else>{{ userInitial }}</span>
                   </template>
                   <template v-else>
-                    <v-skeleton-loader type="avatar" width="32" height="32" />
+                    <v-skeleton-loader type="avatar" width="36" height="36" />
                   </template>
                 </v-avatar>
               </v-btn>
 
               <v-btn
-                size="small"
-                variant="text"
+                class="ml-2 btn-logout-candy appbar-btn"
                 prepend-icon="mdi-logout"
-                class="ml-2"
                 @click="handleLogout"
               >
                 登出
@@ -45,29 +50,23 @@
             </template>
 
             <template v-else>
-              <v-btn size="small" class="cta ml-2" :to="{ name: 'auth.login' }">登入</v-btn>
+              <v-btn class="cta ml-2 appbar-btn" :to="{ name: 'auth.login' }">登入</v-btn>
             </template>
           </div>
         </template>
-
-        <!-- 底線（取代原本的旗串） -->
-        <template #extension>
-          <div class="appbar-underline"></div>
-        </template>
       </v-app-bar>
 
-      <!-- 主內容（layout 控制容器寬） -->
+      <!-- 主內容 -->
       <v-main>
         <DefaultLayout v-if="layout === 'default'">
           <RouterView />
         </DefaultLayout>
-
         <AuthLayout v-else-if="layout === 'auth'">
           <RouterView />
         </AuthLayout>
       </v-main>
 
-      <!-- Footer：透明底 + 上邊線（樣式在 theme.css 的 .footer） -->
+      <!-- Footer -->
       <v-footer
         v-if="layout !== 'auth'"
         app
@@ -90,12 +89,10 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import api from '@/services/api'
 
-// 路由 & 版型
 const route = useRoute()
 const router = useRouter()
 const layout = computed(() => route.meta.layout || 'default')
 
-// 使用者/登入狀態
 const userStore = useUserStore()
 const { user, token } = storeToRefs(userStore)
 const isAuthed = computed(() => !!token.value || !!localStorage.getItem('token'))
@@ -128,13 +125,6 @@ const year = new Date().getFullYear()
 </script>
 
 <style>
-/* NOTE:
-   - 寬度/背景/外框：在 base.css + main.css + theme.css 已處理（#app 滿版、.app-frame、奶油底）
-   - AppBar / Footer 線條也在 theme.css：
-     .appbar { border-bottom: 2px solid var(--c-ink); }
-     .footer { border-top: 2px solid var(--c-ink); }
-*/
-
 html,
 body,
 #app {
@@ -150,57 +140,94 @@ body,
   opacity: 0.85;
 }
 
-/* 題頭字級微放大（若你已在 theme.css 設定，可移除此段） */
-.appbar-title {
-  font-size: 1.35rem;
-  letter-spacing: 0.5px;
-  color: var(--c-ink);
-}
-
-/* AppBar 容器 */
+/* AppBar 外觀 */
 .appbar.ftc {
   position: relative;
   box-shadow: none !important;
   background: transparent !important;
 }
-
-/* 右側容器 */
-.bar-right {
+/* 垂直置中、左右內縮 */
+.appbar .v-toolbar__content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 100px;
   display: flex;
   align-items: center;
-  padding: 80px;
-  margin-top: 25px;
+  justify-content: space-between;
+}
+.appbar .v-toolbar__prepend,
+.appbar .v-toolbar__append {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* 中央徽章（保留位置/樣式，可換圖） */
-/* .brand-badge {
+/* AppBar 底線 */
+.appbar::after {
+  content: '';
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  bottom: 0;
+  width: 95%;
+  height: 2px;
+  background: #111;
+  opacity: 0.9;
+}
 
-  color: #111;
-  font-weight: 900;
-  font-size: 2.5rem;
-  font-family: HoodBrandTitle;
-  letter-spacing: 0.4px;
-  padding: 8px 14px;
-} */
+/* ===== AppBar 按鈕尺寸（放大、置中） ===== */
+.appbar .appbar-btn {
+  height: 48px !important;
+  padding: 0 18px !important;
+  border-radius: 999px !important;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1 !important; /* 修掉「貼底」 */
+  font-weight: 800;
+  font-family: 'font02';
+  font-size: 1.2rem;
+}
+/* 左側主要 CTA 再大一點 */
+.appbar .appbar-btn--primary {
+  height: 52px !important;
+  padding: 0 22px !important;
+  font-size: 1.5rem;
+}
+/* 頭像 icon 按鈕：48x48 圓形容器 */
+.appbar .appbar-btn--icon {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  border: 2px solid #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 內層內容保險：任何 Vuetify 內部都垂直置中 */
+.appbar .v-btn .v-btn__content {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 中央品牌貼紙（保留你的描邊設定） */
 .brand-badge {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  /* 你的原有樣式 */
+  top: 15px; /* 若想更居中，可改 20~24px */
   color: #111;
   font-weight: 900;
   font-size: 4rem;
   font-family: HoodBrandTitle;
   letter-spacing: 0.4px;
   padding: 8px 14px;
-  top: 15px;
   z-index: 1007;
-  /* 雙層描邊效果 */
   text-shadow:
-    /* 第一層：較粗的白色描邊 */
     -2px -2px 0 #fff,
     2px -2px 0 #fff,
     -2px 2px 0 #fff,
@@ -209,42 +236,22 @@ body,
     -3px 3px 0 #fff,
     3px -3px 0 #fff,
     3px 3px 0 #fff,
-    /* 第二層：較細的黑色描邊，覆蓋在白色描邊之上 */ -4px -4px 0 #111,
+    -4px -4px 0 #111,
     4px -4px 0 #111,
     -4px 4px 0 #111,
     4px 4px 0 #111;
+  transition: transform 0.2s ease;
+}
+.brand-badge:hover {
+  transform: scale(1.1) translateX(-50%);
 }
 
-/* 底線 */
-.appbar-underline {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 95%;
-  height: 2px;
-  background: #111;
-  opacity: 0.9;
-}
-
-/* 既有：標題 hover & 可點 */
-.clickable {
-  cursor: pointer;
-  user-select: none;
-}
-.appbar-title:hover {
-  opacity: 0.85;
-}
-
-/* RWD 微調 */
+/* RWD 微調品牌貼紙 */
 @media (max-width: 960px) {
   .brand-badge {
     top: 18px;
     padding: 6px 12px;
     font-size: 0.98rem;
   }
-}
-
-.app-frame {
-  position: relative;
 }
 </style>

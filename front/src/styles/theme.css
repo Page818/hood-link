@@ -1,4 +1,7 @@
-/* ---------- 色彩變數（可在此微調整體氛圍） ---------- */
+/* src/styles/theme.css */
+/* =========================
+   Brand Tokens
+   ========================= */
 :root {
   --c-cream: #fff7ec;
   --c-coral: #ff7a59;
@@ -9,9 +12,15 @@
 
   --shadow-1: 0 6px 16px rgba(31, 41, 55, 0.08);
   --shadow-2: 0 10px 24px rgba(31, 41, 55, 0.12);
+
+  /* 紙紋路徑 */
+  --tx-paper-frame: url('/textures/cardboard-1920x1080.png');
+  --tx-paper-card: url('/textures/paper.png');
 }
 
-/* ---------- 通用外觀工具 ---------- */
+/* =========================
+   Utilities
+   ========================= */
 .round-xl {
   border-radius: 24px !important;
 }
@@ -32,7 +41,7 @@
   background: var(--c-cream) !important;
 }
 
-/* 輕微上浮互動 */
+/* Subtle hover lift */
 .wiggle {
   transition:
     transform 0.25s ease,
@@ -44,28 +53,32 @@
   box-shadow: var(--shadow-2);
 }
 
-/* 主要 CTA 突出（搭配 v-btn 使用時也可額外加） */
+/* CTA buttons */
 .cta {
   background: var(--c-coral) !important;
   color: #fff !important;
   border-radius: 999px !important;
 }
-
-/* 次要 CTA（清爽） */
 .cta-tonal {
   background: rgba(0, 0, 0, 0.04) !important;
   color: var(--c-ink) !important;
   border-radius: 999px !important;
 }
-
-/* 確保 CTA 文字清晰可見 */
+/* merge: 按鈕統一放這裡 */
 .v-btn.cta {
-  color: #fff !important; /* 白字 */
+  color: #fff !important;
   font-weight: 600;
 }
+.v-btn.cta.v-btn--disabled .v-btn__content {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+.v-btn.cta .v-progress-circular {
+  color: #fff !important;
+}
 
-/* ---------- 分隔裝飾：波浪 / 圓弧 / 鋸齒 ---------- */
-/* 波浪分隔條（放在 section 中間）：<div class="wave-divider"></div> */
+/* =========================
+   Decorative Dividers
+   ========================= */
 .wave-divider {
   position: relative;
   height: 24px;
@@ -75,13 +88,12 @@
   content: '';
   position: absolute;
   inset: 0;
+  top: -12px;
   background: radial-gradient(12px 12px at 12px 12px, var(--c-cream) 12px, transparent 13px)
     repeat-x;
   background-size: 24px 24px;
-  top: -12px;
 }
 
-/* 圓弧（雲朵感） */
 .cloud-divider {
   position: relative;
   height: 28px;
@@ -100,7 +112,6 @@
   background-size: 36px 36px;
 }
 
-/* 鋸齒（party 旗感）：<div class="zigzag"></div> */
 .zigzag {
   height: 10px;
   background:
@@ -108,12 +119,7 @@
     linear-gradient(45deg, transparent 75%, var(--c-cream) 75%) 10px 0/20px 20px;
 }
 
-/* ---------- 旗串裝飾（簡易 CSS 版本） ---------- */
-/* 用法：
-<div class="bunting">
-  <span></span><span></span><span></span>...
-</div>
-*/
+/* Bunting */
 .bunting {
   position: relative;
   height: 46px;
@@ -152,9 +158,11 @@
   border-top-color: #ffc857;
 }
 
-/* ---------- 空狀態/錯誤狀態（友善文案） ---------- */
+/* =========================
+   Empty / Error States
+   ========================= */
 .empty-state {
-  background: linear-gradient(180deg, rgba(255, 247, 236, 0.6), rgba(255, 255, 255, 1));
+  background: linear-gradient(180deg, rgba(255, 247, 236, 0.6), #fff);
   border: 1px dashed rgba(0, 0, 0, 0.08);
   color: var(--c-gray);
   border-radius: 16px;
@@ -175,7 +183,9 @@
   padding: 20px;
 }
 
-/* ---------- 版面細節 ---------- */
+/* =========================
+   Typographic Bits
+   ========================= */
 .section-title {
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -185,7 +195,7 @@
   color: var(--c-gray);
 }
 
-/* 卡片內小貼紙（如：已置頂） */
+/* Sticker label */
 .sticker {
   display: inline-flex;
   align-items: center;
@@ -199,38 +209,11 @@
   font-size: 12px;
 }
 
-/* --------- FlowFest Focus 樣式 --------- */
+/* =========================
+   Vuetify Inputs — Focus / Hover（合併後版本）
+   ========================= */
 
-/* Text Field / Textarea 聚焦 */
-.v-field.v-field--focused {
-  border: 2px solid var(--c-coral) !important;
-  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important; /* Coral 外光暈 */
-  background-color: #fffdf8 !important; /* 奶油底更明顯 */
-}
-
-/* Checkbox 聚焦狀態（邊框 + 勾選） */
-.v-selection-control.v-selection-control--focused {
-  border-radius: 8px;
-  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important;
-}
-
-.v-selection-control.v-selection-control--focused .v-icon {
-  color: var(--c-coral) !important;
-}
-
-/* Checkbox 被勾選時也用 Coral */
-.v-selection-control .v-selection-control__input .v-icon {
-  color: var(--c-coral) !important;
-}
-
-.v-field:hover {
-  background-color: #fffaf3 !important;
-}
-/* =========================================================
-   FlowFest x Vuetify：更精準的 Focus/Active 樣式
-   ========================================================= */
-
-/* 文字輸入類（v-text-field / v-textarea / v-file-input） */
+/* Base transition for fields */
 .v-field {
   transition:
     background-color 0.2s ease,
@@ -238,102 +221,119 @@
     border-color 0.2s ease;
 }
 
-/* solo/filled 變體：用 overlay 控制底色 */
-.v-field--variant-solo .v-field__overlay,
-.v-field--variant-filled .v-field__overlay {
-  background-color: #fffaf3 !important; /* hover/預設的淡奶油 */
+/* Hover (all variants): 奶油感底色 */
+.v-field:hover {
+  background-color: #fffaf3 !important;
 }
-.v-field.v-field--focused .v-field__overlay {
-  background-color: #fffdf8 !important; /* 聚焦更亮一點的奶油 */
+.v-field:hover .v-field__overlay {
+  background-color: #fff7ef !important;
 }
 
-/* outlined 變體：把 outline 直接染成 Coral，並加柔光暈 */
+/* Variants overlay base */
+.v-field--variant-solo .v-field__overlay,
+.v-field--variant-filled .v-field__overlay {
+  background-color: #fffaf3 !important;
+}
+
+/* Focused: 奶油更亮、Coral 光暈、outline 染色、label 染色 */
+.v-field.v-field--focused {
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important;
+  background-color: #fffdf8 !important;
+}
+.v-field.v-field--focused .v-field__overlay {
+  background-color: #fffdf8 !important;
+}
 .v-field.v-field--focused .v-field__outline__start,
 .v-field.v-field--focused .v-field__outline__end,
 .v-field.v-field--focused .v-field__outline__notch {
   border-color: var(--c-coral) !important;
 }
-.v-field.v-field--focused {
-  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important; /* Coral 外光暈 */
-}
-
-/* hover 也給點奶油感（含各變體） */
-.v-field:hover .v-field__overlay {
-  background-color: #fff7ef !important;
-}
-
-/* label 聚焦/啟用顏色（label 在 notch 上） */
 .v-field.v-field--focused .v-label,
 .v-field.v-field--active .v-label {
   color: var(--c-coral) !important;
 }
 
-/* Checkbox / Switch：聚焦「外光暈」 + 勾選/滑桿用 Coral */
+/* Selection controls: Focus ring + 勾選顏色統一 Coral */
 .v-selection-control.v-selection-control--focused {
   border-radius: 8px;
   box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.25) !important;
 }
-.v-selection-control .v-selection-control__input .v-icon {
-  color: var(--c-coral) !important; /* 勾選色 */
-}
-/* 針對已勾選狀態（dirty）再保險一次 */
-.v-selection-control.v-selection-control--dirty .v-icon {
+.v-selection-control .v-selection-control__input .v-icon,
+.v-selection-control.v-selection-control--dirty .v-icon,
+.v-selection-control.v-selection-control--focused .v-icon {
   color: var(--c-coral) !important;
 }
 
-/* File input 的小圖示也跟著 Coral */
+/* File input icon 也用 Coral */
 .v-input.v-file-input .v-field__prepend-inner .v-icon {
   color: var(--c-coral) !important;
 }
 
-/* 主要 CTA（已在你檔案中，但再加強禁用/載入狀態） */
-.v-btn.cta {
-  color: #fff !important;
-  font-weight: 600;
-}
-/* 禁用時也維持白字（避免被 Vuetify 覆蓋成半透明深色） */
-.v-btn.cta.v-btn--disabled .v-btn__content {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-/* 載入中 spinner 顏色 */
-.v-btn.cta .v-progress-circular {
-  color: #fff !important;
-}
-
-/* 外框滿版海報感 */
+/* =========================
+   Framed App Shell / Buttons
+   ========================= */
 .app-frame {
   position: fixed;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   /* inset: 12px; */
-  border: 6px solid var(--c-ink);
-  border-radius: 16px;
-  background: var(--c-cream);
-  overflow: hidden;
+  border: 16px solid var(--c-ink);
+  border-radius: 56px;
+  background: transparent;
   overflow: clip;
 }
-
-/* 手機可以窄一點的外框邊距 */
+.app-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  /* border-radius: inherit; */
+  background-image: var(--tx-paper-frame);
+  /* background-color: #9b2131; */
+  background-repeat: repeat;
+  background-size: 520px auto; /* 紋理顆粒大小：可調 480~720 */
+  filter: contrast(1.05) brightness(1.02);
+  pointer-events: none;
+}
+.app-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: rgba(255, 247, 236, 0.86);
+  mix-blend-mode: multiply; /* 讓紙紋透出但不刺眼 */
+  pointer-events: none;
+}
 @media (max-width: 600px) {
   .app-frame {
     margin: 6px;
     border-width: 4px;
     border-radius: 12px;
   }
+  .app-frame::before {
+    background-size: 420px auto;
+  }
+}
+#app,
+.v-app,
+.v-main {
+  position: relative;
+  z-index: 2;
 }
 
-/* 粉色膠囊按鈕（FlowFest Buy Tickets 感） */
+/* FlowFest-like bubble button */
 .btn-bubble-pink {
-  --pink: #f8a8c1; /* 可微調 */
+  --pink: #f8a8c1;
   background: var(--pink) !important;
-  color: #111 !important; /* 黑字 */
+  color: #111 !important;
   border: 2px solid #111 !important;
   border-radius: 999px !important;
   font-weight: 700 !important;
   letter-spacing: 0.3px;
   box-shadow:
     0 4px 0 #111,
-    0 8px 16px rgba(0, 0, 0, 0.08) !important; /* 貼紙陰影 */
+    0 8px 16px rgba(0, 0, 0, 0.08) !important;
   transform: translateY(0);
   transition:
     transform 0.15s ease,
@@ -353,16 +353,58 @@
     0 2px 0 #111,
     0 6px 12px rgba(0, 0, 0, 0.1) !important;
 }
-html,
-body,
-#app {
-  height: 100%;
+
+/* 黃色登出按鈕 */
+.btn-logout-candy {
+  background: #ffc857 !important;
+  color: #111 !important;
+  border: 2px solid #111 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 0 #111;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
+.btn-logout-candy:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 0 #111,
+    0 12px 20px rgba(0, 0, 0, 0.12) !important;
+  filter: brightness(1.02);
+}
+.btn-logout-candy:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 0 #111;
+}
+/* 頭像 */
+.avatar-flower {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: #ffc857;
+  border: 2px solid #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #111;
+
+  transition: transform 0.3s ease;
+}
+
+.avatar-flower:hover {
+  transform: rotate(15deg) scale(1.05);
+}
+
+/* =========================
+   Page Background & Fonts
+   ========================= */
 body {
   background: var(--c-cream);
 }
 
-/* 品牌標題字：荊南波波黑 Bold */
+/* Brand title font */
 @font-face {
   font-family: 'HoodBrandTitle';
   src: url('/fonts/荊南波波黑-Bold.woff2') format('woff2');
@@ -371,4 +413,56 @@ body {
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'font01';
+  src: url('/fonts/チェックポイントフォントCP Font.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'font02';
+  src: url('/fonts/寒蟬圓黑體.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* 全域字體設定 */
+body,
+html
+#app {
+  font-family: 'font02', 'Noto Sans TC', sans-serif;
+  font-weight: 400;
+  color: var(--c-ink);
+  /* line-height: 1.6; */
+}
+
+/* 卡片顆粒紙感（公告卡、活動卡） */
+.card-paper {
+  position: relative;
+  background: #fff;
+  border: 2px solid #111;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.card-paper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--tx-paper-card);
+  background-repeat: repeat;
+  background-size: 500px auto; /* 紋理顆粒大小（依喜好調） */
+  filter: contrast(1.04) brightness(1.01);
+  opacity: 0.9;
+}
+
+/* 想要更強一點的紙紋就多加這個 modifier */
+.card-paper.paper-strong::before {
+  background-size: 420px auto;
+  filter: contrast(1.08) brightness(0.98);
+  opacity: 0.95;
+}
 

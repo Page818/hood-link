@@ -1,0 +1,34 @@
+// src/plugins/vuetify.js
+import { createVuetify } from 'vuetify'
+import 'vuetify/styles'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
+const light = {
+  dark: false,
+  colors: {
+    background: '#FFF7EC', // 淡奶油底
+    surface: '#FFFFFF',
+    primary: '#FF7A59', // Coral 主色（CTA）
+    secondary: '#00A6A6', // Teal 輔助
+    info: '#7CC4FF', // Sky 資訊塊
+    success: '#2E7D32', // 成功
+    warning: '#FFC857', // 提醒
+    error: '#D7263D', // 錯誤
+    onBackground: '#1F2937',
+    onSurface: '#1F2937',
+  },
+  variables: {
+    'border-radius-root': '16px', // 全域大圓角
+  },
+}
+
+export default createVuetify({
+  components,
+  directives,
+  theme: {
+    defaultTheme: 'light',
+    themes: { light },
+  },
+  
+})
