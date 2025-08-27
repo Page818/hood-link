@@ -12,10 +12,7 @@
       <v-col v-for="(item, index) in features" :key="index" cols="12" sm="6" class="mb-6">
         <v-card
           class="card-news clickable"
-          :class="[
-            ['flavor-red', 'flavor-blue', 'flavor-green'][index % 3], // 套印色
-            item.effect,
-          ]"
+          :class="[item.effect]"
           flat
           :elevation="0"
           :ripple="false"
@@ -109,8 +106,13 @@ function navigateTo(routeName) {
   --brickRed: #b22222;
   --posterBlue: #1976d2;
   --grassGreen: #228b22;
+  --primary: #ff7a59;
+  --secondary: #00a6a6;
 }
-
+/* 歡迎區塊 */
+.text-center {
+  font-family: 'font02';
+}
 /* ====== 卡片基礎：奶油底 + 厚框 + 強紙紋 ====== */
 .v-card.card-news {
   background-color: transparent !important; /* 讓下面的紙質層決定顏色 */
@@ -147,6 +149,7 @@ function navigateTo(routeName) {
 
 /* 粗顆粒（偏大） */
 .v-card.card-news::before {
+  content: '';
   background: url('/assets/textures/cardboard-1920x1080.png') repeat;
   background-size: 520px auto;
   mix-blend-mode: multiply;
@@ -155,6 +158,7 @@ function navigateTo(routeName) {
 }
 /* 細顆粒（偏小） */
 .v-card.card-news::after {
+  content: '';
   background: transparent url('/assets/textures/paper.png') repeat;
   background-size: 360px auto;
   mix-blend-mode: multiply;
@@ -165,9 +169,11 @@ function navigateTo(routeName) {
 .v-card.card-news:hover {
   transform: translateY(-6px);
   /* 下壓+大片柔陰影，復古印刷立體感 */
-  box-shadow:
-    0 6px 0 var(--ink-strong),
-    0 20px 32px rgba(0, 0, 0, 0.18) !important;
+  box-shadow: 0 6px 0 var(--ink-strong) !important;
+  border: 4px solid var(--ink-strong) !important;
+  .tile-icon {
+    color: var(--brickRed);
+  }
 }
 /* 內部排版 */
 .card-inner {
@@ -205,41 +211,9 @@ function navigateTo(routeName) {
     0 20px 30px rgba(0, 0, 0, 0.18);
 }
 
-/* 三種口味的彩色陰影 */
-.flavor-red:hover {
-  box-shadow:
-    0 5px 0 var(--ink-strong),
-    0 16px 28px rgba(178, 34, 34, 0.22);
-}
-.flavor-blue:hover {
-  box-shadow:
-    0 5px 0 var(--ink-strong),
-    0 16px 28px rgba(25, 118, 210, 0.22);
-}
-.flavor-green:hover {
-  box-shadow:
-    0 5px 0 var(--ink-strong),
-    0 16px 28px rgba(34, 139, 34, 0.22);
-}
-
-/* icon 油墨錯位（hover 才出現） */
-.tile-icon {
-  transition: filter 0.18s ease;
-}
-.flavor-red:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 var(--brickRed)) drop-shadow(-1px -1px 0 #7cc4ff);
-}
-.flavor-blue:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 var(--posterBlue)) drop-shadow(-1px -1px 0 #00a6a6);
-}
-.flavor-green:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 var(--grassGreen)) drop-shadow(-1px -1px 0 #ffc857);
-}
-
 /* ====== 每張卡片自己的動畫 ====== */
 
-/* ====== Annou
-ncement (公告) - hover大跳動 ====== */
+/* ====== Announcement (公告) - hover大跳動 ====== */
 @keyframes bigJump {
   0%,
   100% {
@@ -270,6 +244,7 @@ ncement (公告) - hover大跳動 ====== */
   }
   75% {
     transform: translateY(-4px);
+    color: var(--primary);
   }
 }
 .ani-posts {
@@ -290,6 +265,7 @@ ncement (公告) - hover大跳動 ====== */
   }
   60% {
     transform: rotate(15deg);
+    color: var(--secondary);
   }
   80% {
     transform: rotate(-15deg);
@@ -302,6 +278,7 @@ ncement (公告) - hover大跳動 ====== */
   display: inline-block;
   animation: spinIcon 6s ease-in-out infinite;
   animation-delay: 0.6s;
+  /* filter: grayscale(100%) contrast(120%); */
 }
 
 /* ====== Events (活動) - 卡片閃爍 ====== */

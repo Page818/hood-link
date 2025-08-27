@@ -5,7 +5,10 @@
     <!-- 🔙 返回按鈕 -->
     <BackToDashboard />
 
-    <h1 class="text-h5 mb-6 font-weight-bold">社區公告</h1>
+    <h1 class="text-h5 mb-6 font-weight-bold page-title">
+      <v-icon>mdi-bullhorn-outline</v-icon>
+      社區公告
+    </h1>
 
     <!-- 載入狀態 -->
     <v-progress-circular v-if="loading" indeterminate color="primary" />
@@ -27,7 +30,7 @@
       </v-col>
 
       <!-- 右側：公告詳情 -->
-      <v-col cols="12" md="8">
+      <v-col cols="12" md="8" class="detail-wrapper">
         <AnnouncementDetail :announcement="selectedAnnouncement" />
       </v-col>
     </v-row>
@@ -68,7 +71,6 @@ async function fetchAnnouncements() {
   error.value = ''
 
   try {
-    // 你的 axios 已有 baseURL '/api'，這裡不用再加 '/api'
     const { data } = await api.get(`/announcements/community/${communityId.value}`)
     announcements.value = data.announcements || []
 
@@ -106,3 +108,43 @@ function handleSelect(id) {
   selectedId.value = id
 }
 </script>
+
+<style>
+
+
+.detail-wrapper {
+  position: absolute;
+  top: 120px; /* 根據你的 header 高度調整 */
+  bottom: 80px; /* 預留底部空間 */
+  right: 100px;
+  /* left: calc(100% / 12 * 4 + 24px);  */
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--cream);
+  border: 3px solid var(--ink-strong);
+  border-radius: 16px;
+}
+@media (max-width: 768px) {
+  .detail-wrapper {
+    position: static;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+  }
+}
+.detail-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/assets/textures/paper.png') repeat;
+  opacity: 0.25;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.detail-wrapper h2 {
+  font-weight: 800;
+  margin-bottom: 8px;
+  border-bottom: 2px dashed var(--ink-strong);
+  padding-bottom: 4px;
+}
+</style>

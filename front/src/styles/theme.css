@@ -428,10 +428,15 @@ body {
   font-style: normal;
   font-display: swap;
 }
+.page-title::before {
+  content: '';
+  height: 3px;
+  color:#ff7a59;
+}
+
 /* 全域字體設定 */
 body,
-html
-#app {
+html #app {
   font-family: 'font02', 'Noto Sans TC', sans-serif;
   font-weight: 400;
   color: var(--c-ink);
@@ -465,4 +470,3 @@ html
   filter: contrast(1.08) brightness(0.98);
   opacity: 0.95;
 }
-

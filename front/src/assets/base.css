@@ -91,3 +91,41 @@ body,
 .login-card {
   font-family: var(--ui-font), var(--latin-font);
 }
+
+/* 滾動條 */
+.detail-wrapper {
+  border-radius: 16px;
+  overflow: hidden;
+  clip-path: inset(0 round 16px);
+}
+
+.detail-wrapper::-webkit-scrollbar {
+  width: 18px;
+  background: transparent;
+}
+
+.detail-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-wrapper::-webkit-scrollbar-thumb {
+  /* background-color: var(--ink-strong);
+  border-radius: 3px; */
+
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--ink-strong) 0px,
+    var(--ink-strong) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  border-radius: 0;
+  opacity: 0.8;
+
+  transition: background-color 0.3s ease;
+}
+
+.detail-wrapper:hover::-webkit-scrollbar-thumb {
+  background-color: var(--c-teal); /* 滑鼠移上時稍微加深 */
+}
+
