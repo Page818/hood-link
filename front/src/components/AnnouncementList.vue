@@ -12,7 +12,7 @@
     >
       <v-list-item-title>
         {{ item.title }}
-        <v-icon v-if="item.pinned" color="orange" size="16" class="ml-1">mdi-pin</v-icon>
+        <v-icon v-if="item.pinned" color="primary" size="16" class="ml-1">mdi-pin</v-icon>
       </v-list-item-title>
       <v-list-item-subtitle>
         {{ formatDate(item.updatedAt) }}
@@ -40,8 +40,60 @@ const formatDate = (dateString) => {
 
 <style scoped>
 .announcement-list {
+  background-color: var(--ink-strong); /* 深色背景 */
+  opacity: 0.88;
+  filter: contrast(1.08) brightness(1.02);
+  color: #fefefe; /* 預設文字顏色 */
+  border: 3px solid var(--ink-strong); /* 反轉，淺色邊框 */
+  outline: 3px dashed #fefefe;
+  outline-offset: -6px;
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.2);
+  /* border-radius: 12px; */
+  overflow: hidden;
+}
+
+/* v-list-subheader（標題） */
+.announcement-list >>> .v-list-subheader {
+  color: #fefefe;
+  font-size: 1.7rem; /* 放大一點 */
+  font-weight: bold;
+  line-height: 3.8rem;
+  /* font-style: italic; */
+  display: block;
+  text-align: center;
+  font-family: 'HoodBrandTitle';
+}
+
+/* v-list-item 文字 */
+.announcement-list >>> .v-list-item-title {
+  color: #fefefe;
+  font-size: 1.1rem; /* 放大一點 */
+}
+
+.announcement-list >>> .v-list-item-subtitle {
+  color: #ddd; /* 淺灰，比主字淡 */
+  font-size: 0.95rem;
+}
+
+/* hover */
+.announcement-list >>> .v-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 選中 */
+.announcement-list >>> .announcement-selected {
+  background-color: #333;
+  border-left: 4px solid #ffc857; /* 搭配亮色點綴 */
+  border-right: 4px solid #ffc857;
+  color: #ffc857;
+}
+
+/* .announcement-list {
   background-color: transparent;
   border: 3px solid #111;
+  outline: 1px solid #111;
+  outline-offset: -6px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -54,19 +106,16 @@ const formatDate = (dateString) => {
   filter: contrast(1.08) brightness(1.02);
 }
 
-/* 選擇 v-list-item */
 .announcement-list >>> .v-list-item {
   transition: background 0.2s;
 }
 
-/* hover */
 .announcement-list >>> .v-list-item:hover {
   background-color: #fff2d9;
 }
 
-/* 選中 */
 .announcement-list >>> .announcement-selected {
   background-color: #ffc857;
   border-left: 4px solid #111;
-}
+} */
 </style>

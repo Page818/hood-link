@@ -95,8 +95,22 @@ body,
 /* 滾動條 */
 .detail-wrapper {
   border-radius: 16px;
-  overflow: hidden;
   clip-path: inset(0 round 16px);
+  padding: 24px;
+  background: var(--cream);
+  border: 3px solid var(--ink-strong);
+  overflow-y: auto;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+
+}
+.detail-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/assets/textures/paper.png') repeat;
+  opacity: 0.25;
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
 .detail-wrapper::-webkit-scrollbar {
@@ -128,4 +142,3 @@ body,
 .detail-wrapper:hover::-webkit-scrollbar-thumb {
   background-color: var(--c-teal); /* 滑鼠移上時稍微加深 */
 }
-

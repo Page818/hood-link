@@ -10,11 +10,8 @@
     <!-- 功能卡片區塊 -->
     <v-row>
       <v-col v-for="(item, index) in features" :key="index" cols="12" sm="6" class="mb-6">
-        <v-card
-          class="card-news clickable"
-          :class="['red', 'blue', 'green', 'yellow'][index]"
-          @click="navigateTo(item.name)"
-        >
+        <v-card class="card-news clickable" :class="['red', 'blue', 'green', 'yellow'][index]"
+          @click="navigateTo(item.name)">
           <div class="card-inner">
             <v-icon size="48" class="tile-icon">{{ item.icon }}</v-icon>
             <div>
@@ -30,132 +27,138 @@
 </template>
 
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
-import { computed, ref, onMounted, watch } from 'vue'
-import api from '@/services/api'
+  import { useRoute, useRouter } from 'vue-router'
+  import { computed, ref, onMounted, watch } from 'vue'
+  import api from '@/services/api'
 
-const route = useRoute()
-const router = useRouter()
+  const route = useRoute()
+  const router = useRouter()
 
-const communityId = computed(() => route.params.communityId)
-const communityName = ref('')
-const loading = ref(true)
+  const communityId = computed(() => route.params.communityId)
+  const communityName = ref('')
+  const loading = ref(true)
 
-async function fetchCommunityName() {
-  if (!communityId.value) return
-  loading.value = true
-  try {
-    const { data } = await api.get('/users/me')
-    const user = data.user
-    const matched = user?.community?.find((c) => (c._id || c) === communityId.value)
-    communityName.value = matched ? matched.name : '未知社區'
-  } finally {
-    loading.value = false
+  async function fetchCommunityName() {
+    if (!communityId.value) return
+    loading.value = true
+    try {
+      const { data } = await api.get('/users/me')
+      const user = data.user
+      const matched = user?.community?.find((c) => (c._id || c) === communityId.value)
+      communityName.value = matched ? matched.name : '未知社區'
+    } finally {
+      loading.value = false
+    }
   }
-}
-onMounted(fetchCommunityName)
+  onMounted(fetchCommunityName)
 
-watch(
-  () => communityId.value,
-  (newId, oldId) => {
-    if (newId && newId !== oldId) fetchCommunityName()
-  },
-)
+  watch(
+    () => communityId.value,
+    (newId, oldId) => {
+      if (newId && newId !== oldId) fetchCommunityName()
+    },
+  )
 
-const features = [
-  { title: '最新公告', icon: 'mdi-bullhorn-outline', name: 'community.announcements' },
-  { title: '好鄰交流', icon: 'mdi-message-text-outline', name: 'community.posts' },
-  { title: '異常回報', icon: 'mdi-map-marker-alert-outline', name: 'reports.create' },
-  { title: '活動列表', icon: 'mdi-calendar-heart', name: 'community.events' },
-]
+  const features = [
+    { title: '最新公告', icon: 'mdi-bullhorn-outline', name: 'community.announcements' },
+    { title: '好鄰交流', icon: 'mdi-message-text-outline', name: 'community.posts' },
+    { title: '異常回報', icon: 'mdi-map-marker-alert-outline', name: 'reports.create' },
+    { title: '活動列表', icon: 'mdi-calendar-heart', name: 'community.events' },
+  ]
 
-function navigateTo(routeName) {
-  if (!communityId.value) return
-  router.push({ name: routeName, params: { communityId: communityId.value } })
-}
+  function navigateTo(routeName) {
+    if (!communityId.value) return
+    router.push({ name: routeName, params: { communityId: communityId.value } })
+  }
 </script>
 
 <style scoped>
-.card-news {
-  position: relative;
-  background: #fdfbf7; /* 淺米色，比純白柔和 */
-  border: 2px solid #111;
-  border-radius: 16px;
-  overflow: hidden;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    filter 0.18s ease;
-  box-shadow: 0 3px 0 #111;
-}
+  .card-news {
+    position: relative;
+    background: #fdfbf7;
+    /* 淺米色，比純白柔和 */
+    border: 2px solid #111;
+    border-radius: 16px;
+    overflow: hidden;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      filter 0.18s ease;
+    box-shadow: 0 3px 0 #111;
+  }
 
-.card-news::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: url('/assets/textures/paper.png');
-  background-repeat: repeat;
-  background-size: 480px auto;
-  opacity: 0.85;
-  filter: contrast(1.05) brightness(1.02);
-  pointer-events: none;
-}
+  .card-news::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: url('/assets/textures/paper.png');
+    background-repeat: repeat;
+    background-size: 480px auto;
+    opacity: 0.85;
+    filter: contrast(1.05) brightness(1.02);
+    pointer-events: none;
+  }
 
-.card-inner {
-  position: relative;
-  z-index: 1;
-  padding: 28px 32px;
-  display: grid;
-  grid-template-columns: 56px auto;
-  gap: 16px;
-  align-items: center;
-}
+  .card-inner {
+    position: relative;
+    z-index: 1;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 56px auto;
+    gap: 16px;
+    align-items: center;
+  }
 
-/* hover 動態 */
-.card-news:hover {
-  transform: translateY(-3px) rotate(-0.3deg);
-  box-shadow:
-    0 5px 0 #111,
-    0 10px 22px rgba(0, 0, 0, 0.12);
-}
+  /* hover 動態 */
+  .card-news:hover {
+    transform: translateY(-3px) rotate(-0.3deg);
+    box-shadow:
+      0 5px 0 #111,
+      0 10px 22px rgba(0, 0, 0, 0.12);
+  }
 
-.tile-icon {
-  transition: filter 0.2s ease;
-}
+  .tile-icon {
+    transition: filter 0.2s ease;
+  }
 
-/* hover 時加印刷錯位感 */
-.card-news:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 var(--c-coral)) drop-shadow(-1px -1px 0 var(--c-sky));
-}
+  /* hover 時加印刷錯位感 */
+  .card-news:hover .tile-icon {
+    filter: drop-shadow(1px 1px 0 var(--c-coral)) drop-shadow(-1px -1px 0 var(--c-sky));
+  }
 
-/* 標題 + 分隔線 */
-.tile-title {
-  font-weight: 800;
-  font-size: 1.1rem;
-}
-.rule {
-  height: 2px;
-  background: repeating-linear-gradient(to right, #111 0 12px, transparent 12px 16px);
-  opacity: 0.9;
-  margin: 4px 0 6px;
-}
-.tile-sub {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
+  /* 標題 + 分隔線 */
+  .tile-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+  }
 
-/* 不同卡片套色 */
-.card-news.red:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 #d7263d) drop-shadow(-1px -1px 0 #7cc4ff);
-}
-.card-news.blue:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 #7cc4ff) drop-shadow(-1px -1px 0 #00a6a6);
-}
-.card-news.green:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 #00a6a6) drop-shadow(-1px -1px 0 #ffc857);
-}
-.card-news.yellow:hover .tile-icon {
-  filter: drop-shadow(1px 1px 0 #ffc857) drop-shadow(-1px -1px 0 #d7263d);
-}
+  .rule {
+    height: 2px;
+    background: repeating-linear-gradient(to right, #111 0 12px, transparent 12px 16px);
+    opacity: 0.9;
+    margin: 4px 0 6px;
+  }
+
+  .tile-sub {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  /* 不同卡片套色 */
+  .card-news.red:hover .tile-icon {
+    filter: drop-shadow(1px 1px 0 #d7263d) drop-shadow(-1px -1px 0 #7cc4ff);
+  }
+
+  .card-news.blue:hover .tile-icon {
+    filter: drop-shadow(1px 1px 0 #7cc4ff) drop-shadow(-1px -1px 0 #00a6a6);
+  }
+
+  .card-news.green:hover .tile-icon {
+    filter: drop-shadow(1px 1px 0 #00a6a6) drop-shadow(-1px -1px 0 #ffc857);
+  }
+
+  .card-news.yellow:hover .tile-icon {
+    filter: drop-shadow(1px 1px 0 #ffc857) drop-shadow(-1px -1px 0 #d7263d);
+  }
 </style>

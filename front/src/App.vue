@@ -171,8 +171,11 @@ body,
   transform: translateX(-50%);
   bottom: 0;
   width: 95%;
-  height: 2px;
-  background: #111;
+  height: 4px;
+  background: var(--tx-paper-card);
+  background-color: #1f2937;
+  background-size: 360 auto;
+  opacity: 0.88;
   opacity: 0.9;
 }
 

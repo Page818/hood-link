@@ -1,13 +1,13 @@
 <!-- src/views/DashboardView.vue -->
 <template>
-  <v-container class="fill-height d-flex justify-center align-center dashboard-bg">
+  <v-container class="fill-height d-flex justify-center align-center">
     <!-- 載入中 -->
     <v-progress-circular v-if="loading" indeterminate color="primary" />
 
     <!-- 載入完成後顯示主內容 -->
     <v-card v-else class="pa-6 text-center w-100" max-width="400" elevation="4">
       <!-- 歡迎詞 -->
-      <h1 class="text-h6 mb-6">歡迎回來，{{ user?.name || '使用者' }}</h1>
+      <h1 class="text-h6 mb-6" color="primary">歡迎回來，{{ user?.name || '使用者' }}</h1>
 
       <!-- 尚未加入社區 -->
       <div v-if="hasNoCommunity">
@@ -103,12 +103,8 @@ const goToAdmin = () => {
 </script>
 
 <style scoped>
-.dashboard-bg {
-  background-color: #f9f5f0;
-  background-image: url('/more-leaves-on-green.png');
-  /* 可放在 public 資料夾 */
-  background-repeat: repeat;
-  /* background-size: 100px; */
-  width: 1200px;
+.v-card {
+  position: relative;
+  z-index: 9999;
 }
 </style>

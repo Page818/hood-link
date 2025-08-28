@@ -1,11 +1,11 @@
 <!-- AnnouncementView.vue -->
 
 <template>
-  <v-container class="py-10">
+  <v-container>
     <!-- 🔙 返回按鈕 -->
     <BackToDashboard />
 
-    <h1 class="text-h5 mb-6 font-weight-bold page-title">
+    <h1 class="text-h4 mb-6 page-title">
       <v-icon>mdi-bullhorn-outline</v-icon>
       社區公告
     </h1>
@@ -21,7 +21,7 @@
     <!-- 主內容 -->
     <v-row v-else>
       <!-- 左側：標題列表 -->
-      <v-col cols="12" md="4">
+      <v-col cols="12" md="4" class="list-section">
         <AnnouncementList
           :announcements="announcements"
           :selectedId="selectedId"
@@ -30,7 +30,7 @@
       </v-col>
 
       <!-- 右側：公告詳情 -->
-      <v-col cols="12" md="8" class="detail-wrapper">
+      <v-col cols="12" md="8" class="detail-section">
         <AnnouncementDetail :announcement="selectedAnnouncement" />
       </v-col>
     </v-row>
@@ -109,42 +109,23 @@ function handleSelect(id) {
 }
 </script>
 
-<style>
-
-
-.detail-wrapper {
-  position: absolute;
-  top: 120px; /* 根據你的 header 高度調整 */
-  bottom: 80px; /* 預留底部空間 */
-  right: 100px;
-  /* left: calc(100% / 12 * 4 + 24px);  */
-  overflow-y: auto;
-  padding: 24px;
-  background: var(--cream);
-  border: 3px solid var(--ink-strong);
-  border-radius: 16px;
+<style scoped>
+.page-title {
+  font-weight: 900;
+  font-family: 'HoodBrandTitle';
 }
-@media (max-width: 768px) {
-  .detail-wrapper {
-    position: static;
-    max-height: calc(100vh - 160px);
+
+@media (min-width: 769px) {
+  .detail-section {
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+    height: calc(100vh - 100px);
+  }
+
+  .detail-container {
+    height: 100%;
     overflow-y: auto;
   }
-}
-.detail-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('/assets/textures/paper.png') repeat;
-  opacity: 0.25;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-
-.detail-wrapper h2 {
-  font-weight: 800;
-  margin-bottom: 8px;
-  border-bottom: 2px dashed var(--ink-strong);
-  padding-bottom: 4px;
 }
 </style>

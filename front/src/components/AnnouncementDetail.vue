@@ -1,8 +1,8 @@
 <template>
-  <div v-if="announcement" class="pa-4">
+  <div v-if="announcement" class="detail-wrapper">
     <!-- 標題與時間 -->
     <div class="mb-4">
-      <h2 class="text-h6 font-weight-bold">{{ announcement.title }}</h2>
+      <h1 class="font-weight-bold">{{ announcement.title }}</h1>
       <p class="text-caption text-grey">更新時間：{{ formatDate(announcement.updatedAt) }}</p>
     </div>
 
@@ -39,3 +39,14 @@ const formatDate = (dateString) => {
   })
 }
 </script>
+
+<style scoped>
+.detail-wrapper h1 {
+  /* font-weight: 800; */
+  margin-bottom: 8px;
+  border-bottom: 2px dashed var(--ink-strong);
+  padding-bottom: 4px;
+  font-family: 'HoodBrandTitle';
+  font-size: 2.2rem;
+}
+</style>

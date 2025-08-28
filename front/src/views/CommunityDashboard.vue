@@ -2,9 +2,13 @@
 <template>
   <v-container class="py-10">
     <!-- 歡迎區塊 -->
-    <div class="text-center mb-10">
-      <h1 class="text-h5 font-weight-bold">{{ communityName }}</h1>
-      <p class="text-subtitle-2">歡迎來到 {{ communityName }} 社區！</p>
+    <div class="text-center mb-10 text-aria">
+      <h1 class="font-weight-bold">{{ communityName }}</h1>
+      <div class="marquee-wrapper">
+        <p class="marquee-text">
+          歡迎來到 {{ communityName }} 社區! 選擇下方的區塊以進入各功能頁面~
+        </p>
+      </div>
     </div>
 
     <!-- 功能卡片區塊 -->
@@ -110,8 +114,47 @@ function navigateTo(routeName) {
   --secondary: #00a6a6;
 }
 /* 歡迎區塊 */
-.text-center {
-  font-family: 'font02';
+.text-aria {
+  display: block;
+  background: var(--tx-paper-dark);
+  background-size: 300px auto;
+
+  background-repeat: repeat;
+
+  /* pointer-events: none; */
+  border-bottom: 4px solid var(--ink-strong);
+}
+
+.text-aria h1 {
+  font-family: 'HoodBrandTitle';
+  color: var(--cream);
+  font-size: 2rem;
+}
+.marquee-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  height: 1.5em;
+}
+.text-aria p {
+  font-family: 'HoodBrandTitle';
+  color: var(--cream);
+  font-size: 1.2rem;
+}
+.marquee-text {
+  animation: floatText 2.5s ease-in-out infinite;
+}
+
+@keyframes floatText {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 /* ====== 卡片基礎：奶油底 + 厚框 + 強紙紋 ====== */
 .v-card.card-news {

@@ -16,6 +16,7 @@
   /* 紙紋路徑 */
   --tx-paper-frame: url('/textures/cardboard-1920x1080.png');
   --tx-paper-card: url('/textures/paper.png');
+  --tx-paper-dark: url('/textures/notebook--dark--1920x1080.png');
 }
 
 /* =========================
@@ -291,7 +292,8 @@
   background-image: var(--tx-paper-frame);
   /* background-color: #9b2131; */
   background-repeat: repeat;
-  background-size: 520px auto; /* 紋理顆粒大小：可調 480~720 */
+  /* 紋理顆粒大小*/
+  background-size: 1200px auto;
   filter: contrast(1.05) brightness(1.02);
   pointer-events: none;
 }
@@ -431,7 +433,7 @@ body {
 .page-title::before {
   content: '';
   height: 3px;
-  color:#ff7a59;
+  color: #ff7a59;
 }
 
 /* 全域字體設定 */

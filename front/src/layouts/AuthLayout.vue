@@ -54,28 +54,4 @@ const props = defineProps({
   display: grid;
   place-items: center;
 }
-
-/* 左右背景預留 */
-.particles-side {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-.particles-side.left {
-  left: 0;
-}
-.particles-side.right {
-  right: 0;
-}
-
-@media (max-width: 768px) {
-  .particles-side {
-    display: none;
-  } /* 行動裝置自動隱藏粒子以免擁擠/耗電 */
-  .hero {
-    top: 8% !important;
-  }
-}
 </style>
