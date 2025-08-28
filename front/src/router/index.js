@@ -1,5 +1,5 @@
 // router/index.js
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -23,7 +23,7 @@ import AdminMembers from '@/views/admin/AdminMembers.vue'
 import AdminCommunitySetting from '@/views/admin/AdminCommunitySetting.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   scrollBehavior() {
     // 切頁預設回頂（避免從內頁返回時停在中間）
     return { top: 0 }
@@ -174,7 +174,7 @@ const router = createRouter({
       component: AdminCommunitySetting,
       props: true,
       meta: { layout: 'default' },
-    }
+    },
 
     // （可選）404
     // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue'), meta: { layout: 'default' } },
